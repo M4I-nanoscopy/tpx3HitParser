@@ -104,7 +104,7 @@ def find_cluster_matches(hits):
     match_y = np.logical_and(diff_y < 2, diff_y > -2)
 
     # Look for events which are close in ToA
-    match_t = np.logical_and(diff_t < timeSize, diff_t > -timeSize)
+    match_t = (np.absolute(diff_t) < timeSize)
 
     # Look for events from the same chip
     match_c = (diff_c == 0)
@@ -176,8 +176,11 @@ def build_cluster(c):
     ToT = c[:, TOT]
     ToA = c[:, cTOA]
 
-    cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
-    cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
+    try:
+        cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
+        cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
+    except ValueError:
+        logger.warn("Cluster exceeded max cluster size defined by n_pixels (%i)" % (n_pixels))
 
     ci[CI_CHIP] = c[0][CHIP]
     ci[CI_X] = min_x
