@@ -19,10 +19,11 @@ def main():
         w = h5py.File(config.output, 'w')
 
     if config.raw:
-        hits = tpx3format.read_raw(config.raw, config.cores)
+        hits, spidr_events = tpx3format.read_raw(config.raw, config.cores)
 
         if config.store_hits:
             w['hits'] = hits
+            w['spidr'] = spidr_events
 
     if config.hits:
         f = h5py.File(config.hits, 'r')

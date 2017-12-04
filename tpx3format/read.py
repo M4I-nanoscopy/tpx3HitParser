@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import struct
 import numpy as np
+from lib.constants import *
 
 logger = logging.getLogger('root')
 
@@ -15,6 +16,7 @@ def read_raw(file_name, cores):
     f = file(f_name, "rb")
 
     positions = []
+    spidr_events = []
     n_hits = 0
     mode = 0
     while True:
@@ -33,11 +35,18 @@ def read_raw(file_name, cores):
         mode = header[5]
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 
-        positions.append([f.tell(), size, chip_nr])
-        n_hits += size / 8
+        # If this is a size 1 package, this could be SPIDR event package
+        spidr_event = False
+        if size / 8 == 1:
+            spidr_event = parse_spidr_packet(f, f.tell())
 
-        # if n_hits > 10000:
-        #    break
+            if spidr_event:
+                spidr_events.append(spidr_event)
+
+        # If it is a true pixel package, add it to the list to be parsed later
+        if not spidr_event:
+            positions.append([f.tell(), size, chip_nr])
+            n_hits += size / 8
 
         f.seek(size, 1)
 
@@ -59,11 +68,38 @@ def read_raw(file_name, cores):
     for r in results:
         hits_chunk = r.get(timeout=999999)
 
-        # TODO: Not sure this the best way to get all hits in a big ndarray
         hits[offset:offset + len(hits_chunk)] = hits_chunk
         offset += len(hits_chunk)
 
-    return hits
+    return hits, spidr_events
+
+
+def parse_spidr_packet(f, pos):
+    # Read package and reverse position (is this a clean way?)
+    f.seek(pos)
+    b = f.read(8)
+    f.seek(pos)
+
+    struct_fmt = "<Q"
+    pkg = struct.unpack(struct_fmt, b)[0]
+
+    # Get SPIDR time and CHIP ID
+    time = pkg & 0xffff
+    chip_id = (pkg >> 16) & 0xffff
+
+    if pkg >> 60 == 0xb:
+        # This is NOT a SPIDR packet, but a normal pixel packet with a length of 1
+        return False
+    elif pkg >> 48 == SPIDR_END_OF_COMMAND:
+        logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif pkg >> 48 == SPIDR_END_OF_READOUT:
+        logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif pkg >> 48 == SPIDR_END_OF_SEQUANTIAL_COMMAND:
+        logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    else:
+        logger.debug('Unknown SPIDR packet on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+
+    return [pkg >> 48, chip_id, time]
 
 
 def parse_data_packages(positions):
@@ -110,17 +146,9 @@ def parse_data_package(f, pos):
             CToA = (ToA << 4) | (~FToA & 0xf)
 
             yield [pos[2], x, y, ToT, ToA, FToA, time, CToA]
-    elif pixels[0] >> 48 == 0x71bf:
-        chip_id = (pixels[0] >> 16) & 0xffff
-        logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pixels[0] >> 48 == 0x71b0:
-        chip_id = (pixels[0] >> 16) & 0xffff
-        logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pixels[0] >> 48 == 0x71ef:
-        chip_id = (pixels[0] >> 16) & 0xffff
-        logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-
-    yield None
+    else:
+        logger.error('Failed parsing data package')
+        yield None
 
 
 def chunks(l, n):
