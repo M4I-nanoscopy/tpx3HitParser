@@ -1,9 +1,13 @@
 import ConfigParser
 import argparse
+import logging
 import sys
+import os
+
+logger = logging.getLogger('root')
 
 
-def config(argv=None):
+def parse_config(argv=None):
     # Do argv default this way, as doing it in the functional
     # declaration sets it at compile time.
     if argv is None:
@@ -19,63 +23,74 @@ def config(argv=None):
         # Turn off help, so we print all options in response to -h
         add_help=False
     )
-    conf_parser.add_argument("-c", "--config", help="Specify config file", metavar="FILE")
+    conf_parser.add_argument("-c", "--config", help="Specify config file for constant defaults (default: default.cfg)",
+                             metavar="FILE")
     args, remaining_argv = conf_parser.parse_known_args()
 
-    defaults = {
-        "exposure": None,
-        "frames": False,
-        "cores": 4
-    }
+    default_conf_file = os.path.join(os.path.dirname(argv[0]), 'default.cfg')
 
-    if args.config:
+    conf_file = None
+    if not args.config and os.path.exists(default_conf_file):
+        conf_file = default_conf_file
+    elif args.config and os.path.exists(args.config):
+        conf_file = args.config
+    elif args.config and os.path.exists(args.config):
+        logger.error('Config file %s does not exist' % args.config)
+        raise Exception
+
+    # Read defaults from config file
+    defaults = {}
+    if conf_file:
         config = ConfigParser.SafeConfigParser()
-        config.read([args.config])
-        defaults.update(dict(config.items("Defaults")))
+        config.read([conf_file])
+        defaults = dict(config.items("Defaults"))
+    else:
+        logger.warn("No config file being used for setting constant defaults")
 
     # Parse rest of arguments
     # Don't suppress add_help here so it will handle -h
     parser = argparse.ArgumentParser(
         # Inherit options from config_parser
-        parents=[conf_parser]
+        parents=[conf_parser],
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30)
     )
     parser.set_defaults(**defaults)
 
     # Input arguments
-    parser.add_argument("--raw", help="Read raw .tpx3")
-    parser.add_argument("--hits", help="Read .h5 file containing /hits")
-    parser.add_argument("--clusters", help="Read .h5 file containing /clusters")
+    input_group = parser.add_argument_group('input arguments')
+    input_group.add_argument("--raw", help="Read raw .tpx3")
+    input_group.add_argument("--hits", help="Read .h5 file containing /hits")
+    input_group.add_argument("--clusters", help="Read .h5 file containing /clusters")
 
     # Parse options
-    parser.add_argument("-C", action='store_true', help="Parse clusters")
-    parser.add_argument("-E", action='store_true', help="Parse events")
+    parse_group = parser.add_argument_group('parse arguments')
+    parse_group.add_argument("-C", action='store_true', help="Parse clusters")
+    parse_group.add_argument("-E", action='store_true', help="Parse events")
 
     # Output file arguments
-    parser.add_argument("-o", "--output", help='Output file')
-    parser.add_argument("--store_hits", action='store_true', help="Store /hits in output file")
-    parser.add_argument("--store_clusters", action='store_true', help="Store /clusters in output file")
-    parser.add_argument("--store_events", action='store_true', help="Store /events in output file")
+    output_group = parser.add_argument_group('output arguments')
+    output_group.add_argument("-o", "--output", metavar='FILE', help='Output HDF5 file')
+    output_group.add_argument("--store_hits", action='store_true', help="Store /hits in output file")
+    output_group.add_argument("--store_clusters", action='store_true', help="Store /clusters in output file")
+    output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
 
-    # Time options
-    # parser.add_argument("-e", "--exposure", type=int, help='Exposure time (default: inf)')
-    # parser.add_argument("-f", "--frame, type=int, help='Which frame to show')
-    parser.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats (default: false)')
-
-    # Frame options
-    parser.add_argument("--frame_hits", action='store_true', help='Show counting mode frame of hits (default: false)')
-    parser.add_argument("--frame_clusters", action='store_true', help='Show clusters (default: false)')
-    parser.add_argument("--show", action='store_true', help='Show frame in window (default: false)')
-
-    # Statistics
-    parser.add_argument("--stats", action='store_true', help='Print image stats (default: false)')
+    # Misc options
+    misc_group = parser.add_argument_group('miscellaneous arguments')
+    misc_group.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats')
+    misc_group.add_argument("--frame_hits", action='store_true', help='Show counting mode frame of hits')
+    misc_group.add_argument("--stats", action='store_true', help='Print hit frame stats')
 
     # Constants
-    parser.add_argument("--cores", type=int, help='Number of cores to use')
-    parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')
-    parser.add_argument("-a", "--algorithm", help='Event localisation algorithm to use')
+    constants_group = parser.add_argument_group('constants')
+    constants_group.add_argument("--cores", type=int, help='Number of cores to use (default: %s) ' % defaults['cores'])
+    constants_group.add_argument("-a", "--algorithm", metavar='A',
+                                 help='Event localisation algorithm to use (default: %s)' % defaults['algorithm'])
+    constants_group.add_argument("--cluster_min_size", metavar='SIZE',
+                                 help='Minimum cluster size (default: %s)' % defaults['cluster_min_size'])
 
+    # Misc
+    parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')
 
     args = parser.parse_args(remaining_argv)
 
     return args
-

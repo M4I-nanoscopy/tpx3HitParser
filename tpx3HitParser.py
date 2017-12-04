@@ -11,7 +11,7 @@ import logging
 
 
 def main():
-    config = lib.config()
+    config = lib.parse_config()
 
     if config.verbose:
         log_level = logging.DEBUG
@@ -43,8 +43,7 @@ def main():
         if config.stats:
             frames.stats(frame)
 
-        if config.show:
-            frames.show(frame)
+        frames.show(frame)
 
     if config.spidr_stats:
         frames.spidr_time_stats(hits)
