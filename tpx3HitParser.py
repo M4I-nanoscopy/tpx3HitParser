@@ -7,12 +7,20 @@ import frames
 import clusters
 import tpx3format
 import events
-
-logger = lib.setup_custom_logger('root')
+import logging
 
 
 def main():
     config = lib.config()
+
+    if config.verbose:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
+
+    logger = lib.setup_custom_logger('root', log_level)
+
+    # Print config statements
     logger.debug(config)
 
     if config.output:

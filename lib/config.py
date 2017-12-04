@@ -71,6 +71,7 @@ def config(argv=None):
 
     # Constants
     parser.add_argument("--cores", type=int, help='Number of cores to use')
+    parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')
     parser.add_argument("-a", "--algorithm", help='Event localisation algorithm to use')
 
 
