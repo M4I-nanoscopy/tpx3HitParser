@@ -16,7 +16,7 @@ def read_raw(file_name, cores):
     f = file(f_name, "rb")
 
     positions = []
-    spidr_events = []
+    control_events = []
     n_hits = 0
     mode = 0
     while True:
@@ -35,16 +35,16 @@ def read_raw(file_name, cores):
         mode = header[5]
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 
-        # If this is a size 1 package, this could be SPIDR event package
-        spidr_event = False
+        # If this is a size 1 package, this could be control event package
+        control_event = False
         if size / 8 == 1:
-            spidr_event = parse_spidr_packet(f, f.tell())
+            control_event = parse_control_packet(f, f.tell())
 
-            if spidr_event:
-                spidr_events.append(spidr_event)
+            if control_event:
+                control_events.append(control_event)
 
         # If it is a true pixel package, add it to the list to be parsed later
-        if not spidr_event:
+        if not control_event:
             positions.append([f.tell(), size, chip_nr])
             n_hits += size / 8
 
@@ -71,10 +71,10 @@ def read_raw(file_name, cores):
         hits[offset:offset + len(hits_chunk)] = hits_chunk
         offset += len(hits_chunk)
 
-    return hits, spidr_events
+    return hits, control_events
 
 
-def parse_spidr_packet(f, pos):
+def parse_control_packet(f, pos):
     # Read package and reverse position (is this a clean way?)
     f.seek(pos)
     b = f.read(8)
@@ -88,16 +88,18 @@ def parse_spidr_packet(f, pos):
     chip_id = (pkg >> 16) & 0xffff
 
     if pkg >> 60 == 0xb:
-        # This is NOT a SPIDR packet, but a normal pixel packet with a length of 1
+        # This is NOT a event packet, but a normal pixel packet with a length of 1
         return False
-    elif pkg >> 48 == SPIDR_END_OF_COMMAND:
+    elif pkg >> 48 == CONTROL_END_OF_COMMAND:
         logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pkg >> 48 == SPIDR_END_OF_READOUT:
+    elif pkg >> 48 == CONTROL_END_OF_READOUT:
         logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pkg >> 48 == SPIDR_END_OF_SEQUANTIAL_COMMAND:
+    elif pkg >> 48 == CONTROL_END_OF_SEQUANTIAL_COMMAND:
         logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif pkg >> 48 == CONTROL_OTHER_CHIP_COMMAND:
+        logger.debug('OtherChipCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
     else:
-        logger.debug('Unknown SPIDR packet on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+        logger.debug('Unknown control packet (0x%04x) on chip ID %04x at SPIDR_TIME %5d' % (pkg >> 48, chip_id, time))
 
     return [pkg >> 48, chip_id, time]
 

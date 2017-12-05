@@ -27,11 +27,11 @@ def main():
         w = h5py.File(config.output, 'w')
 
     if config.raw:
-        hits, spidr_events = tpx3format.read_raw(config.raw, config.cores)
+        hits, control_events = tpx3format.read_raw(config.raw, config.cores)
 
         if config.store_hits:
             w['hits'] = hits
-            w['spidr'] = spidr_events
+            w['control'] = control_events
 
     if config.hits:
         f = h5py.File(config.hits, 'r')
