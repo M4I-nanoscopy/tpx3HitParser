@@ -54,12 +54,13 @@ def spidr_time_stats(events):
     print "SPIDR time max: %d" % spidr.max()
 
     print "Indeces where SPIDR time jumps: "
-    diff = np.where(abs(np.diff(spidr)) > 10000)
-    print diff
+    #diff = np.where(abs(np.diff(spidr)) > 1000000)
+    #print diff
 
     print "Seconds (guess):"
     # print tick
-    print (spidr[-1] - spidr[0]) * tick + len(diff) * 26.843
+    #print (spidr[-1] - spidr[0]) * tick + len(diff) * 26.843
+    print (spidr[-1] - spidr[0]) * tick
 
     #plot_timers(events)
 

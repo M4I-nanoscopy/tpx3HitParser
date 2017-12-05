@@ -1,4 +1,4 @@
-import ctypes
+import lib
 import logging
 import multiprocessing
 import time
@@ -70,7 +70,7 @@ def find_clusters_chunked(start, end):
     hits_chunk[:] = shared_hits[start:end]
 
     # Split in groups of cluster_chunk_size
-    groups = np.array_split(hits_chunk, len(hits_chunk) / cluster_chunk_size)
+    groups = np.array_split(hits_chunk, len(hits_chunk) / lib.config.settings.cluster_chunk_size)
 
     cluster_info = list()
     cluster_matrix = list()
@@ -148,8 +148,11 @@ def clean_cluster(c):
     sum = np.sum(c[:, TOT])
     size = len(c)
 
+    settings = lib.config.settings
+
     # Move this var to config options
-    if 200 < sum < 400 and 2 < size < 10:
+    if settings.cluster_min_sum_tot < sum < settings.cluster_max_sum_tot \
+            and settings.cluster_min_size < size < settings.cluster_max_size:
         return True
     else:
         return False
@@ -157,8 +160,9 @@ def clean_cluster(c):
 
 # This builds a cluster from an event list, and the corresponding cluster_info array
 def build_cluster(c):
+    cluster_matrix_size = lib.config.settings.cluster_matrix_size
     ci = np.zeros((5), 'uint16')
-    cluster = np.zeros((2, n_pixels, n_pixels), 'uint16')
+    cluster = np.zeros((2, cluster_matrix_size, cluster_matrix_size), 'uint16')
 
     # Base cTOA value
     min_ctoa = min(c[:, cTOA])
@@ -177,10 +181,10 @@ def build_cluster(c):
     ToA = c[:, cTOA]
 
     try:
-        cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
-        cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(n_pixels, n_pixels)).todense()
+        cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
+        cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
     except ValueError:
-        logger.warn("Cluster exceeded max cluster size defined by n_pixels (%i)" % (n_pixels))
+        logger.warn("Cluster exceeded max cluster size defined by n_pixels (%i)" % (cluster_matrix_size))
 
     ci[CI_CHIP] = c[0][CHIP]
     ci[CI_X] = min_x

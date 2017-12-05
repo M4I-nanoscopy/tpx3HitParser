@@ -6,6 +6,8 @@ import os
 
 logger = logging.getLogger('root')
 
+settings = None
+
 
 def parse_config(argv=None):
     # Do argv default this way, as doing it in the functional
@@ -41,9 +43,9 @@ def parse_config(argv=None):
     # Read defaults from config file
     defaults = {}
     if conf_file:
-        config = ConfigParser.SafeConfigParser()
-        config.read([conf_file])
-        defaults = dict(config.items("Defaults"))
+        config_parser = ConfigParser.SafeConfigParser()
+        config_parser.read([conf_file])
+        defaults = dict(config_parser.items("Defaults"))
     else:
         logger.warn("No config file being used for setting constant defaults")
 
@@ -52,15 +54,16 @@ def parse_config(argv=None):
     parser = argparse.ArgumentParser(
         # Inherit options from config_parser
         parents=[conf_parser],
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=30)
+        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=35, width=100)
     )
     parser.set_defaults(**defaults)
 
     # Input arguments
     input_group = parser.add_argument_group('input arguments')
-    input_group.add_argument("--raw", help="Read raw .tpx3")
-    input_group.add_argument("--hits", help="Read .h5 file containing /hits")
-    input_group.add_argument("--clusters", help="Read .h5 file containing /clusters")
+    input_group_excl = input_group.add_mutually_exclusive_group(required=True)
+    input_group_excl.add_argument("--raw", metavar='FILE', help="Read raw .tpx3")
+    input_group_excl.add_argument("--hits", metavar='FILE', help="Read .h5 file containing /hits")
+    input_group_excl.add_argument("--clusters", metavar='FILE', help="Read .h5 file containing /clusters")
 
     # Parse options
     parse_group = parser.add_argument_group('parse arguments')
@@ -85,12 +88,24 @@ def parse_config(argv=None):
     constants_group.add_argument("--cores", type=int, help='Number of cores to use (default: %s) ' % defaults['cores'])
     constants_group.add_argument("-a", "--algorithm", metavar='A',
                                  help='Event localisation algorithm to use (default: %s)' % defaults['algorithm'])
-    constants_group.add_argument("--cluster_min_size", metavar='SIZE',
+    constants_group.add_argument("--cluster_min_size", metavar='N',
                                  help='Minimum cluster size (default: %s)' % defaults['cluster_min_size'])
+    constants_group.add_argument("--cluster_max_size", metavar='N',
+                                 help='Maximum cluster size (default: %s)' % defaults['cluster_max_size'])
+    constants_group.add_argument("--cluster_max_sum_tot", metavar='N',
+                                 help='Maximum cluster sum tot (default: %s)' % defaults['cluster_max_sum_tot'])
+    constants_group.add_argument("--cluster_min_sum_tot", metavar='N',
+                                 help='Minimum cluster sum tot (default: %s)' % defaults['cluster_min_sum_tot'])
+    constants_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
+                                 help='Number of hits to consider at once (memory intensive!) (default: %s) ' % defaults['cluster_chunk_size'])
+    constants_group.add_argument("--cluster_matrix_size", type=int, metavar='N',
+                                 help='Size of the resulting cluster matrix (default: %s) ' % defaults['cluster_matrix_size'])
 
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')
 
-    args = parser.parse_args(remaining_argv)
+    global settings
+    settings = parser.parse_args(remaining_argv)
 
-    return args
+    if (settings.store_hits or settings.store_clusters or settings.store_events) and not settings.output:
+        parser.error('An output file (-o or --output) is required when specifying a store option')
