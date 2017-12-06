@@ -25,7 +25,7 @@ def parse_config(argv=None):
         # Turn off help, so we print all options in response to -h
         add_help=False
     )
-    conf_parser.add_argument("-c", "--config", help="Specify config file for constant defaults (default: default.cfg)",
+    conf_parser.add_argument("-c", "--config", help="Specify other config file ",
                              metavar="FILE")
     args, remaining_argv = conf_parser.parse_known_args()
 
@@ -54,7 +54,7 @@ def parse_config(argv=None):
     parser = argparse.ArgumentParser(
         # Inherit options from config_parser
         parents=[conf_parser],
-        formatter_class=lambda prog: argparse.HelpFormatter(prog, max_help_position=35, width=100)
+        formatter_class=lambda prog: argparse.ArgumentDefaultsHelpFormatter(prog, max_help_position=35, width=100)
     )
     parser.set_defaults(**defaults)
 
@@ -84,22 +84,17 @@ def parse_config(argv=None):
     misc_group.add_argument("--stats", action='store_true', help='Print hit frame stats')
 
     # Constants
-    constants_group = parser.add_argument_group('constants')
-    constants_group.add_argument("--cores", type=int, help='Number of cores to use (default: %s) ' % defaults['cores'])
-    constants_group.add_argument("-a", "--algorithm", metavar='A',
-                                 help='Event localisation algorithm to use (default: %s)' % defaults['algorithm'])
-    constants_group.add_argument("--cluster_min_size", metavar='N',
-                                 help='Minimum cluster size (default: %s)' % defaults['cluster_min_size'])
-    constants_group.add_argument("--cluster_max_size", metavar='N',
-                                 help='Maximum cluster size (default: %s)' % defaults['cluster_max_size'])
-    constants_group.add_argument("--cluster_max_sum_tot", metavar='N',
-                                 help='Maximum cluster sum tot (default: %s)' % defaults['cluster_max_sum_tot'])
-    constants_group.add_argument("--cluster_min_sum_tot", metavar='N',
-                                 help='Minimum cluster sum tot (default: %s)' % defaults['cluster_min_sum_tot'])
-    constants_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
-                                 help='Number of hits to consider at once (memory intensive!) (default: %s) ' % defaults['cluster_chunk_size'])
-    constants_group.add_argument("--cluster_matrix_size", type=int, metavar='N',
-                                 help='Size of the resulting cluster matrix (default: %s) ' % defaults['cluster_matrix_size'])
+    c_group = parser.add_argument_group('constants')
+    c_group.add_argument("--cores", type=int, help='Number of cores to use')
+    c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
+    c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
+    c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
+    c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )
+    c_group.add_argument("--cluster_min_sum_tot", type=int, metavar='N', help='Minimum cluster sum tot')
+    c_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
+                                 help='Number of hits to consider at once (memory intensive!)')
+    c_group.add_argument("--cluster_matrix_size", type=int, metavar='N',
+                                 help='Size of the resulting cluster matrix')
 
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')

@@ -184,7 +184,7 @@ def build_cluster(c):
         cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
         cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
     except ValueError:
-        logger.warn("Cluster exceeded max cluster size defined by n_pixels (%i)" % (cluster_matrix_size))
+        logger.warn("Cluster exceeded max cluster size defined by cluster_matrix_size (%i)" % (cluster_matrix_size))
 
     ci[CI_CHIP] = c[0][CHIP]
     ci[CI_X] = min_x
