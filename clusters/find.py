@@ -85,7 +85,7 @@ def find_clusters_chunked(start, end):
 
 def find_cluster_matches(hits):
     # TODO: Move this var to configuration options
-    timeSize = 50
+    time_size = 50
 
     x = hits[:, X]
     y = hits[:, Y]
@@ -104,7 +104,7 @@ def find_cluster_matches(hits):
     match_y = np.logical_and(diff_y < 2, diff_y > -2)
 
     # Look for events which are close in ToA
-    match_t = (np.absolute(diff_t) < timeSize)
+    match_t = (np.absolute(diff_t) < time_size)
 
     # Look for events from the same chip
     match_c = (diff_c == 0)
@@ -145,13 +145,13 @@ def find_cluster_matches(hits):
 
 # Clean clusters based on their summed ToT and cluster size
 def clean_cluster(c):
-    sum = np.sum(c[:, TOT])
+    summed = np.sum(c[:, TOT])
     size = len(c)
 
     settings = lib.config.settings
 
     # Move this var to config options
-    if settings.cluster_min_sum_tot < sum < settings.cluster_max_sum_tot \
+    if settings.cluster_min_sum_tot < summed < settings.cluster_max_sum_tot \
             and settings.cluster_min_size < size < settings.cluster_max_size:
         return True
     else:
@@ -160,9 +160,9 @@ def clean_cluster(c):
 
 # This builds a cluster from an event list, and the corresponding cluster_info array
 def build_cluster(c):
-    cluster_matrix_size = lib.config.settings.cluster_matrix_size
-    ci = np.zeros((5), 'uint16')
-    cluster = np.zeros((2, cluster_matrix_size, cluster_matrix_size), 'uint16')
+    m_size = lib.config.settings.cluster_matrix_size
+    ci = np.zeros(5, 'uint16')
+    cluster = np.zeros((2, m_size, m_size), 'uint16')
 
     # Base cTOA value
     min_ctoa = min(c[:, cTOA])
@@ -177,14 +177,14 @@ def build_cluster(c):
 
     rows = c[:, X]
     cols = c[:, Y]
-    ToT = c[:, TOT]
-    ToA = c[:, cTOA]
+    tot = c[:, TOT]
+    toa = c[:, cTOA]
 
     try:
-        cluster[0, :, :] = scipy.sparse.coo_matrix((ToT, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
-        cluster[1, :, :] = scipy.sparse.coo_matrix((ToA, (rows, cols)), shape=(cluster_matrix_size, cluster_matrix_size)).todense()
+        cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
+        cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
-        logger.warn("Cluster exceeded max cluster size defined by cluster_matrix_size (%i)" % (cluster_matrix_size))
+        logger.warn("Cluster exceeded max cluster size defined by cluster_matrix_size (%i)" % m_size)
 
     ci[CI_CHIP] = c[0][CHIP]
     ci[CI_X] = min_x
