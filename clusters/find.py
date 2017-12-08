@@ -21,6 +21,8 @@ def find_clusters(hits, cores):
     groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
 
     for group in groups:
+        # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over the process bus
+        # This could be improved maybe with better shared mem usage
         results.append(pool.apply_async(find_cluster_matches, args=([group])))
 
     pool.close()
@@ -112,7 +114,6 @@ def clean_cluster(c):
 
     settings = lib.config.settings
 
-    # Move this var to config options
     if settings.cluster_min_sum_tot < summed < settings.cluster_max_sum_tot \
             and settings.cluster_min_size < size < settings.cluster_max_size:
         return True
