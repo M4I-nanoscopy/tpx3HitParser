@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import lib
 import logging
 import multiprocessing
@@ -8,46 +9,30 @@ import scipy.sparse
 
 logger = logging.getLogger('root')
 
-shared_hits = None
-
 
 def find_clusters(hits, cores):
     logger.info("Started finding clusters")
 
-    # Create memory shared array of the hits. This is much faster then passing the whole array
-    # This needs to happen BEFORE building the mp.Pool()
-    # TODO: This will NOT work on Windows as global vars are not shared across processes
-    global shared_hits
-    shared_hits = hits
-
     pool = multiprocessing.Pool(cores)
-
-    end = 0
-    start = 0
-    size = len(hits)
-
     results = list()
-
     begin = time.time()
 
     # First split in chunks splits across the number of cores available
-    chunk_size = len(hits) / cores + cores
-    while end < (size - 1):
-        end = end + chunk_size
+    groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
 
-        if end > size:
-            end = size - 1
-
-        results.append(pool.apply_async(find_clusters_chunked, args=(start, end)))
-        start = end + 1
+    for group in groups:
+        results.append(pool.apply_async(find_cluster_matches, args=([group])))
 
     pool.close()
 
     cluster_info = list()
     cluster_matrix = list()
 
+    progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
+
     for r in results:
-        ci, cm = r.get(timeout=999999)
+        ci, cm = r.get(timeout=100)
+        progress_bar.update(len(groups[0]))
 
         cluster_info.extend(ci)
         cluster_matrix.extend(cm)
@@ -55,30 +40,7 @@ def find_clusters(hits, cores):
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-        len(cluster_info), size, time_taken, cores, size / time_taken))
-
-    return cluster_info, cluster_matrix
-
-
-def find_clusters_chunked(start, end):
-    logger.debug("Starting finding clusters of hits %d to %d" % (start, end))
-
-    # Get access to mem shared hits
-    global shared_hits
-    # Split in chunks of cluster_chunk_size. The find_cluster_matches is memory intensive
-    hits_chunk = np.empty((end - start, 8), 'uint16')
-    hits_chunk[:] = shared_hits[start:end]
-
-    # Split in groups of cluster_chunk_size
-    groups = np.array_split(hits_chunk, len(hits_chunk) / lib.config.settings.cluster_chunk_size)
-
-    cluster_info = list()
-    cluster_matrix = list()
-
-    for group in groups:
-        ci, cm = find_cluster_matches(group)
-        cluster_info.extend(ci)
-        cluster_matrix.extend(cm)
+        len(cluster_info), len(hits), time_taken, cores, len(hits) / time_taken))
 
     return cluster_info, cluster_matrix
 
