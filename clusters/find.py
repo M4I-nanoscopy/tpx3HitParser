@@ -21,8 +21,8 @@ def find_clusters(hits, cores):
     groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
 
     for group in groups:
-        # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over the process bus
-        # This could be improved maybe with better shared mem usage
+        # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over
+        # the process bus. This could be improved maybe with better shared mem usage
         results.append(pool.apply_async(find_cluster_matches, args=([group])))
 
     pool.close()
@@ -31,18 +31,23 @@ def find_clusters(hits, cores):
     cluster_matrix = list()
 
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
+    filtered = 0
 
     for r in results:
-        ci, cm = r.get(timeout=100)
+        ci, cm, f = r.get(timeout=100)
         progress_bar.update(len(groups[0]))
 
         cluster_info.extend(ci)
         cluster_matrix.extend(cm)
+        filtered += f
 
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
         len(cluster_info), len(hits), time_taken, cores, len(hits) / time_taken))
+
+    filtered_percentage = float(filtered / float(len(cluster_info) + filtered)) * 100
+    logger.info("Filtered %d clusters (%d percent)" % (filtered, filtered_percentage))
 
     return cluster_info, cluster_matrix
 
@@ -78,6 +83,7 @@ def find_cluster_matches(hits):
 
     cluster_info = list()
     cluster_matrix = list()
+    filtered = 0
 
     # Loop over all columns of matches, and handle event/cluster per column
     for m in range(0, matches.shape[0]):
@@ -100,11 +106,13 @@ def find_cluster_matches(hits):
             ci, cm = build_cluster(cluster)
             cluster_info.append(ci)
             cluster_matrix.append(cm)
+        elif len(cluster) > 1:
+            filtered += 1
 
         # Make sure the events we used are not being used a second time
         matches[select] = False
 
-    return cluster_info, cluster_matrix
+    return cluster_info, cluster_matrix, filtered
 
 
 # Clean clusters based on their summed ToT and cluster size
