@@ -69,7 +69,7 @@ def read_raw(file_name, cores):
 
             # Chunk is ready to be processed, off load to sub process
             if i == max_positions:
-                results.append(pool.apply_async(parse_data_packages, args=[positions[:]], callback=pb_update))
+                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions)], callback=pb_update))
                 i = 0
 
             n_hits += size / 8

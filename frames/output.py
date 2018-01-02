@@ -42,7 +42,7 @@ def show(frame):
 
 # Display some stats about the SPIDR global timer
 def spidr_time_stats(events):
-    events = events[()]
+    # events = events[()]
 
     spidr = events[:, SPIDR_TIME]
 
@@ -62,7 +62,7 @@ def spidr_time_stats(events):
     #print (spidr[-1] - spidr[0]) * tick + len(diff) * 26.843
     print (spidr[-1] - spidr[0]) * tick
 
-    #plot_timers(events)
+    plot_timers(events)
 
 
 # Plot SPIDR time of entire run
