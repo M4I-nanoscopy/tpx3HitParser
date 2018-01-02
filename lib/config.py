@@ -86,6 +86,7 @@ def parse_config(argv=None):
     # Constants
     c_group = parser.add_argument_group('constants')
     c_group.add_argument("--cores", type=int, help='Number of cores to use')
+    c_group.add_argument("--max_hits", metavar='N', type=int, help='Maximum number of hits to read (0: infinite)')
     c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )

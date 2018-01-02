@@ -3,6 +3,9 @@ import multiprocessing
 import struct
 import numpy as np
 from lib.constants import *
+import lib
+from tqdm import tqdm
+import os
 
 logger = logging.getLogger('root')
 
@@ -14,11 +17,27 @@ def read_raw(file_name, cores):
     f_name = file_name
 
     f = file(f_name, "rb")
+    guestimate = os.fstat(f.fileno()).st_size / 8
 
-    positions = []
+    # Allocate an array to hold positions of packages
+    max_positions = 1000
+    positions = np.empty((max_positions, 3), dtype='uint32')
+
+    # Allocate processing processes
+    pool = multiprocessing.Pool(cores)
+
+    # Make progress bar to keep track of hits being read
+    logger.info("Reading file %s, guestimating %d hits" % (f_name, guestimate))
+    progress_bar = tqdm(total=guestimate, unit="hits", smoothing=0.1, unit_scale=True)
+
+    def pb_update(r):
+        progress_bar.update(len(r))
+
     control_events = []
+    results = []
     n_hits = 0
     mode = 0
+    i = 0
     while True:
         b = f.read(8)
 
@@ -45,31 +64,35 @@ def read_raw(file_name, cores):
 
         # If it is a true pixel package, add it to the list to be parsed later
         if not control_event:
-            positions.append([f.tell(), size, chip_nr])
+            positions[i] = [f.tell(), size, chip_nr]
+            i += 1
+
+            # Chunk is ready to be processed, off load to sub process
+            if i == max_positions:
+                results.append(pool.apply_async(parse_data_packages, args=[positions[:]], callback=pb_update))
+                i = 0
+
             n_hits += size / 8
+
+        if 0 < lib.config.settings.max_hits < n_hits:
+            break
 
         f.seek(size, 1)
 
-    hits = np.empty((n_hits, 8), 'uint16')
-
     logger.info("File %s contains %d hits in mode %d " % (f_name, n_hits, mode))
+    progress_bar.total = n_hits
 
-    pool = multiprocessing.Pool(cores)
-
-    chunk_size = len(positions) / cores
-    slice = chunks(positions, chunk_size)
-
-    results = []
-    for i, chunk in enumerate(slice):
-        results.append(pool.apply_async(parse_data_packages, args=[chunk]))
+    # Parse remaining bit of packages
+    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i]], callback=pb_update))
     pool.close()
 
-    offset = 0
+    hits = []
     for r in results:
-        hits_chunk = r.get(timeout=999999)
+        hits_chunk = r.get(timeout=100)
 
-        hits[offset:offset + len(hits_chunk)] = hits_chunk
-        offset += len(hits_chunk)
+        hits.extend(hits_chunk)
+
+    progress_bar.close()
 
     return hits, control_events
 
