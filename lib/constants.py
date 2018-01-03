@@ -1,25 +1,32 @@
-# Hit matrix indeces
-CHIP = 0
-X = 1
-Y = 2
-TOT = 3
-TOA = 4
-fTOA = 5
-SPIDR_TIME = 6
-cTOA = 7
+import numpy
+
+# Hit matrix data type
+dt_hit = numpy.dtype([
+    ('chipId', numpy.uint8),
+    ('x', numpy.uint8),
+    ('y', numpy.uint8),
+    ('ToT', numpy.uint8),
+    ('cToA', numpy.uint16),
+    ('TSPIDR', numpy.uint16)
+])
 
 # Cluster info key indeces
-CI_CHIP = 0
-CI_X = 1
-CI_Y = 2
-CI_SPIDR_TIME = 3
-CI_cTOA = 4
+dt_ci = numpy.dtype([
+    ('chipId', numpy.uint8),
+    ('x', numpy.uint8),
+    ('y', numpy.uint8),
+    ('cToA', numpy.uint16),
+    ('TSPIDR', numpy.uint16)
+])
 
 # Event matrix key indeces
-E_CHIP = 0
-E_X = 1
-E_Y = 2
-E_TIME = 3
+dt_event = numpy.dtype([
+    ('chipId', numpy.uint8),
+    ('x', numpy.float64),
+    ('y', numpy.float64),
+    ('cToA', numpy.uint16),
+    ('TSPIDR', numpy.uint16),
+])
 
 # Control events
 CONTROL_END_OF_COMMAND = 0x71bf # 29119

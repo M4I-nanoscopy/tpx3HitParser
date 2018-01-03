@@ -86,11 +86,14 @@ def read_raw(file_name, cores):
     results.append(pool.apply_async(parse_data_packages, args=[positions[0:i]], callback=pb_update))
     pool.close()
 
-    hits = []
+    hits = np.empty(n_hits, dtype=dt_hit)
+
+    offset = 0
     for r in results:
         hits_chunk = r.get(timeout=100)
 
-        hits.extend(hits_chunk)
+        hits[offset:offset + len(hits_chunk)] = hits_chunk
+        offset += len(hits_chunk)
 
     progress_bar.close()
 
@@ -134,7 +137,7 @@ def parse_data_packages(positions):
     f = file(f_name, "rb")
 
     n_hits = sum(pos[1] / 8 for pos in positions)
-    hits = np.empty((n_hits, 8), 'uint16')
+    hits = np.empty(n_hits, dtype=dt_hit)
 
     i = 0
     for pos in positions:
@@ -170,7 +173,7 @@ def parse_data_package(f, pos):
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
-            yield [pos[2], x, y, ToT, ToA, FToA, time, CToA]
+            yield (pos[2], x, y, ToT, CToA, time)
     else:
         logger.error('Failed parsing data package')
         yield None

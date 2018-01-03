@@ -12,7 +12,7 @@ def localize_events(cluster_matrix, cluster_info, method):
     logger.info("Started event localization on %d events using method %s" % (len(cluster_info), method))
     begin = time.time()
 
-    events = np.empty((len(cluster_info), 4), 'float64')
+    events = np.empty(len(cluster_info), dtype=dt_event)
 
     if method == "centroid":
         centroid(cluster_matrix, cluster_info, events)
@@ -32,10 +32,11 @@ def centroid(cluster_matrix, cluster_info, events):
         # Center of mass of ToT cluster
         x, y = ndimage.measurements.center_of_mass(cluster[0])
 
-        events[idx][E_CHIP] = cluster_info[idx][CI_CHIP]
-        events[idx][E_X] = cluster_info[idx][CI_X] + x + 0.5
-        events[idx][E_Y] = cluster_info[idx][CI_Y] + y + 0.5
-        events[idx][E_TIME] = cluster_info[idx][CI_cTOA]
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
+        events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5
+        events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
 
     return events
 
@@ -58,9 +59,10 @@ def cnn(cluster_matrix, cluster_info, events):
     pred = model.predict(x_test, batch_size=(10^6))
 
     for idx, p in enumerate(pred):
-        events[idx][E_CHIP] = cluster_info[idx][CI_CHIP]
-        events[idx][E_X] = cluster_info[idx][CI_X] + p[0]
-        events[idx][E_Y] = cluster_info[idx][CI_Y] + p[1]
-        events[idx][E_TIME] = cluster_info[idx][CI_cTOA]
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
+        events[idx]['x'] = cluster_info[idx]['x'] + p[0]
+        events[idx]['y'] = cluster_info[idx]['y'] + p[1]
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
 
     return events

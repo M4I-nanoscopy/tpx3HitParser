@@ -56,10 +56,10 @@ def find_cluster_matches(hits):
     # TODO: Move this var to configuration options
     time_size = 50
 
-    x = hits[:, X]
-    y = hits[:, Y]
-    t = hits[:, cTOA]
-    c = hits[:, CHIP]
+    x = hits['x']
+    y = hits['y']
+    t = hits['cToA']
+    c = hits['chipId']
 
     # Calculate for all events the difference in x, y, cTOA and chip with all other event
     # This is a memory intensive step! We're creating 4 times a cluster_chunk_size * cluster_chunk_size sized matrix
@@ -117,7 +117,7 @@ def find_cluster_matches(hits):
 
 # Clean clusters based on their summed ToT and cluster size
 def clean_cluster(c):
-    summed = np.sum(c[:, TOT])
+    summed = np.sum(c['ToT'])
     size = len(c)
 
     settings = lib.config.settings
@@ -132,24 +132,24 @@ def clean_cluster(c):
 # This builds a cluster from an event list, and the corresponding cluster_info array
 def build_cluster(c):
     m_size = lib.config.settings.cluster_matrix_size
-    ci = np.zeros(5, 'uint16')
-    cluster = np.zeros((2, m_size, m_size), 'uint16')
+    ci = np.zeros(1, dtype=dt_ci)
+    cluster = np.zeros((2, m_size, m_size), 'uint8')
 
     # Base cTOA value
-    min_ctoa = min(c[:, cTOA])
-    c[:, cTOA] = c[:, cTOA] - min_ctoa
+    min_ctoa = min(c['cToA'])
+    c['cToA'] = c['cToA'] - min_ctoa
 
     # Base x and y value
-    min_x = min(c[:, X])
-    min_y = min(c[:, Y])
+    min_x = min(c['x'])
+    min_y = min(c['y'])
 
-    c[:, X] = c[:, X] - min_x
-    c[:, Y] = c[:, Y] - min_y
+    c['x'] = c['x'] - min_x
+    c['y'] = c['y'] - min_y
 
-    rows = c[:, X]
-    cols = c[:, Y]
-    tot = c[:, TOT]
-    toa = c[:, cTOA]
+    rows = c['x']
+    cols = c['y']
+    tot = c['ToT']
+    toa = c['cToA']
 
     try:
         cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
@@ -157,10 +157,10 @@ def build_cluster(c):
     except ValueError:
         logger.warn("Cluster exceeded max cluster size defined by cluster_matrix_size (%i)" % m_size)
 
-    ci[CI_CHIP] = c[0][CHIP]
-    ci[CI_X] = min_x
-    ci[CI_Y] = min_y
-    ci[CI_SPIDR_TIME] = c[0][SPIDR_TIME]
-    ci[CI_cTOA] = min_ctoa
+    ci['chipId'] = c[0]['chipId']
+    ci['x'] = min_x
+    ci['y'] = min_y
+    ci['TSPIDR'] = c[0]['TSPIDR']
+    ci['cToA'] = min_ctoa
 
     return ci, cluster
