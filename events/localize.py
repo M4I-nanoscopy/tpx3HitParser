@@ -54,7 +54,8 @@ def cnn(cluster_matrix, cluster_info, events):
     package_directory = os.path.dirname(os.path.abspath(__file__))
     model = load_model(os.path.join(package_directory, 'cnn_models', 'model-tottoa-g4medipix-300si-200kev-set10.h5'))
 
-    pred = model.predict(x_test, batch_size=n)
+    # TODO: Make this configurable
+    pred = model.predict(x_test, batch_size=(10^6))
 
     for idx, p in enumerate(pred):
         events[idx][E_CHIP] = cluster_info[idx][CI_CHIP]
