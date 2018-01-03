@@ -1,3 +1,4 @@
+from matplotlib import patches
 from tqdm import tqdm
 import lib
 import logging
@@ -6,6 +7,7 @@ import time
 from lib.constants import *
 import numpy as np
 import scipy.sparse
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger('root')
 
@@ -29,25 +31,25 @@ def find_clusters(hits, cores):
 
     cluster_info = list()
     cluster_matrix = list()
+    cluster_stats = list()
 
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
-    filtered = 0
 
     for r in results:
-        ci, cm, f = r.get(timeout=100)
+        ci, cm, s = r.get(timeout=100)
         progress_bar.update(len(groups[0]))
 
         cluster_info.extend(ci)
         cluster_matrix.extend(cm)
-        filtered += f
+        cluster_stats.extend(s)
 
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
         len(cluster_info), len(hits), time_taken, cores, len(hits) / time_taken))
 
-    filtered_percentage = float(filtered / float(len(cluster_info) + filtered)) * 100
-    logger.info("Filtered %d clusters (%d percent)" % (filtered, filtered_percentage))
+    if lib.config.settings.cluster_stats:
+        print_cluster_stats(np.array(cluster_info), np.array(cluster_matrix), np.array(cluster_stats))
 
     return cluster_info, cluster_matrix
 
@@ -83,7 +85,7 @@ def find_cluster_matches(hits):
 
     cluster_info = list()
     cluster_matrix = list()
-    filtered = 0
+    cluster_stats = list()
 
     # Loop over all columns of matches, and handle event/cluster per column
     for m in range(0, matches.shape[0]):
@@ -106,13 +108,16 @@ def find_cluster_matches(hits):
             ci, cm = build_cluster(cluster)
             cluster_info.append(ci)
             cluster_matrix.append(cm)
-        elif len(cluster) > 1:
-            filtered += 1
+
+        # Build cluster stats if requested
+        if lib.config.settings.cluster_stats is True and len(cluster) > 0:
+            stats = [len(cluster), np.sum(cluster['ToT'])]
+            cluster_stats.append(stats)
 
         # Make sure the events we used are not being used a second time
         matches[select] = False
 
-    return cluster_info, cluster_matrix, filtered
+    return cluster_info, cluster_matrix, cluster_stats
 
 
 # Clean clusters based on their summed ToT and cluster size
@@ -164,3 +169,36 @@ def build_cluster(c):
     ci['cToA'] = min_ctoa
 
     return ci, cluster
+
+
+def print_cluster_stats(cluster_info, cluster_matrix, cluster_stats):
+    removed = len(cluster_stats) - len(cluster_info)
+    removed_percentage = float(removed / float(len(cluster_info) + removed)) * 100
+
+    logger.info("Removed %d clusters and single hits (%d percent)" % (removed, removed_percentage))
+
+    # Figure
+    fig, ax = plt.subplots()
+
+    # Make 2d hist
+    cmap = plt.get_cmap('viridis')
+    cmap.set_under('w', 1)
+    plt.hist2d(cluster_stats[:, 1], cluster_stats[:, 0], cmap=cmap, vmin=1, range=((0, 600), (0, 12)))
+
+    # Add box showing filter values
+    settings = lib.config.settings
+    ax.add_patch(
+        patches.Rectangle(
+            (settings.cluster_min_sum_tot, settings.cluster_min_size),    # (x,y)
+            settings.cluster_max_sum_tot - settings.cluster_min_sum_tot,  # width
+            settings.cluster_max_size - settings.cluster_min_size,        # height
+            fill=False, edgecolor='red', linewidth=2
+        )
+    )
+
+    plt.tick_params(colors='black')
+    plt.grid(b=True, which='both')
+    plt.ylabel('Cluster Size')
+    plt.xlabel('Cluster ToT sum')
+    plt.colorbar()
+    plt.show()
