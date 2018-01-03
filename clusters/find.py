@@ -12,14 +12,18 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger('root')
 
 
-def find_clusters(hits, cores):
+def find_clusters(hits):
     logger.info("Started finding clusters")
 
-    pool = multiprocessing.Pool(cores, initializer=lib.init_worker)
+    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker)
     results = list()
     begin = time.time()
 
-    # First split in chunks splits across the number of cores available
+    # First split hits in chunks defined by cluster_chunk_size
+    if lib.config.settings.cluster_chunk_size > len(hits):
+        logger.warn("Cluster chunk size is larger than amount of hits")
+        lib.config.settings.cluster_chunk_size = len(hits)
+
     groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
 
     for group in groups:
@@ -36,7 +40,7 @@ def find_clusters(hits, cores):
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
 
     for r in results:
-        ci, cm, s = r.get(timeout=100)
+        ci, cm, s = r.get(timeout=1000)
         progress_bar.update(len(groups[0]))
 
         cluster_info.extend(ci)
@@ -46,7 +50,7 @@ def find_clusters(hits, cores):
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-        len(cluster_info), len(hits), time_taken, cores, len(hits) / time_taken))
+        len(cluster_info), len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
 
     if lib.config.settings.cluster_stats:
         print_cluster_stats(np.array(cluster_info), np.array(cluster_matrix), np.array(cluster_stats))
@@ -58,10 +62,12 @@ def find_cluster_matches(hits):
     # TODO: Move this var to configuration options
     time_size = 50
 
-    x = hits['x']
-    y = hits['y']
-    t = hits['cToA']
-    c = hits['chipId']
+    # Recast to signed integers, as we need to subtract
+    # TODO: This casting causes a lot of extra memory to be used, can we do this better?
+    x = hits['x'].astype('int16')
+    y = hits['y'].astype('int16')
+    t = hits['cToA'].astype('int32')
+    c = hits['chipId'].astype('int8')
 
     # Calculate for all events the difference in x, y, cTOA and chip with all other event
     # This is a memory intensive step! We're creating 4 times a cluster_chunk_size * cluster_chunk_size sized matrix
@@ -183,20 +189,24 @@ def print_cluster_stats(cluster_info, cluster_matrix, cluster_stats):
     # Make 2d hist
     cmap = plt.get_cmap('viridis')
     cmap.set_under('w', 1)
-    plt.hist2d(cluster_stats[:, 1], cluster_stats[:, 0], cmap=cmap, vmin=1, range=((0, 600), (0, 12)))
+    bins = [np.arange(0, 600, 50), np.arange(0, 14, 1)]
+    plt.hist2d(cluster_stats[:, 1], cluster_stats[:, 0], cmap=cmap, vmin=1, range=((0, 600), (0, 14)), bins=bins)
 
     # Add box showing filter values
     settings = lib.config.settings
     ax.add_patch(
         patches.Rectangle(
-            (settings.cluster_min_sum_tot, settings.cluster_min_size),    # (x,y)
+            (settings.cluster_min_sum_tot, settings.cluster_min_size),  # (x,y)
             settings.cluster_max_sum_tot - settings.cluster_min_sum_tot,  # width
-            settings.cluster_max_size - settings.cluster_min_size,        # height
+            settings.cluster_max_size - settings.cluster_min_size,  # height
             fill=False, edgecolor='red', linewidth=2
         )
     )
 
-    plt.tick_params(colors='black')
+    ax.set_xticks(bins[0])
+    ax.set_yticks(bins[1])
+    ax.set_ylim(1)
+    plt.tick_params(colors='black', )
     plt.grid(b=True, which='both')
     plt.ylabel('Cluster Size')
     plt.xlabel('Cluster ToT sum')

@@ -56,7 +56,7 @@ def main():
         cluster_info = f['cluster_info'][()]
 
     if settings.C:
-        cluster_info, cluster_matrix = clusters.find_clusters(hits, settings.cores)
+        cluster_info, cluster_matrix = clusters.find_clusters(hits)
 
         if settings.store_clusters:
             w['clusters'] = cluster_matrix
