@@ -13,7 +13,7 @@ logger = logging.getLogger('root')
 def find_clusters(hits, cores):
     logger.info("Started finding clusters")
 
-    pool = multiprocessing.Pool(cores)
+    pool = multiprocessing.Pool(cores, initializer=lib.init_worker)
     results = list()
     begin = time.time()
 

@@ -24,7 +24,7 @@ def read_raw(file_name, cores):
     positions = np.empty((max_positions, 3), dtype='uint32')
 
     # Allocate processing processes
-    pool = multiprocessing.Pool(cores)
+    pool = multiprocessing.Pool(cores, initializer=lib.init_worker)
 
     # Make progress bar to keep track of hits being read
     logger.info("Reading file %s, guestimating %d hits" % (f_name, guestimate))
