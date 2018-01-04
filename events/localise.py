@@ -35,7 +35,9 @@ def centroid(cluster_matrix, cluster_info, events):
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker)
     results = list()
 
-    # Progress
+    # Progress bar
+    # Disable monitor thread, was throwing errors
+    tqdm.monitor_interval = 0
     progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
 
     # First split clusters in chunks
@@ -121,6 +123,8 @@ def cnn(cluster_matrix, cluster_info, events):
         raise Exception
 
     # Run CNN prediction
+    # TODO: use predict_on_batch and roll our own batches. This allows us to, while processing to
+    # already fill the event matrix
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
     for idx, p in enumerate(predictions):
