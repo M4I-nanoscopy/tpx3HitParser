@@ -97,6 +97,8 @@ def parse_config(argv=None):
                                  help='Number of hits to consider at once (memory intensive!)')
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N',
                                  help='Size of the resulting cluster matrix')
+    c_group.add_argument("--event_chunk_size", type=int, metavar='N',
+                         help='Number of events to process at once')
 
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')

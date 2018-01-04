@@ -96,22 +96,33 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
 def cnn(cluster_matrix, cluster_info, events):
     from keras.models import load_model
+    from keras import backend as K
 
-    n = len(cluster_info)
+    # Hide some of the TensorFlow debug information
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    x_test, y_test = np.zeros((n, 2, 4, 4)), np.zeros((n, 2))
+    # Set amount of cores to use for TensorFlow when using CPU only
+    # Set to a limit of 1 GPU
+    K.set_session(
+        K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
+                                             inter_op_parallelism_threads=lib.config.settings.cores,
+                                             device_count={'GPU': 1}
+                                             )
+                     )
+    )
 
-    for i in cluster_matrix:
-        x_test[i, 0] = cluster_matrix[i, 0, 0:4, 0:4]
-        x_test[i, 1] = np.nan_to_num(cluster_matrix[i, 1, 0:4, 0:4])
-
+    # Load model
     package_directory = os.path.dirname(os.path.abspath(__file__))
-    model = load_model(os.path.join(package_directory, 'cnn_models', 'model-tottoa-g4medipix-300si-200kev-set10.h5'))
+    model = load_model(os.path.join(package_directory, 'cnn_models', 'model-tottoa-g4medipix-300si-200kev-set11.h5'))
 
-    # TODO: Make this configurable
-    pred = model.predict(x_test, batch_size=(10 ^ 6))
+    if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
+        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size?' % (cluster_matrix.shape, model.layers[0].input_shape))
+        raise Exception
 
-    for idx, p in enumerate(pred):
+    # Run CNN prediction
+    predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
+
+    for idx, p in enumerate(predictions):
         events[idx]['chipId'] = cluster_info[idx]['chipId']
         events[idx]['x'] = cluster_info[idx]['x'] + p[0]
         events[idx]['y'] = cluster_info[idx]['y'] + p[1]
