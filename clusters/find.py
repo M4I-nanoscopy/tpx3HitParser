@@ -53,7 +53,7 @@ def find_clusters(hits):
         len(cluster_info), len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
 
     if lib.config.settings.cluster_stats:
-        print_cluster_stats(np.array(cluster_info), np.array(cluster_matrix), np.array(cluster_stats))
+        print_cluster_stats(np.array(cluster_info), np.array(cluster_stats))
 
     return cluster_info, cluster_matrix
 
@@ -111,9 +111,14 @@ def find_cluster_matches(hits):
 
         # Only use clean clusters
         if clean_cluster(cluster):
-            ci, cm = build_cluster(cluster)
-            cluster_info.append(ci)
-            cluster_matrix.append(cm)
+            try:
+                ci, cm = build_cluster(cluster)
+                cluster_info.append(ci)
+                cluster_matrix.append(cm)
+            except ClusterSizeExceeded:
+                logger.warn("Cluster exceeded max cluster size "
+                            "defined by cluster_matrix_size (%i)" % lib.config.settings.cluster_matrix_size)
+                pass
 
         # Build cluster stats if requested
         if lib.config.settings.cluster_stats is True and len(cluster) > 0:
@@ -163,11 +168,14 @@ def build_cluster(c):
     toa = c['cToA']
 
     try:
+        # TODO: We're throwing away the NaN information here of pixels that have not been hit, but this function is
+        # fast!
         cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
         cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
-        logger.warn("Cluster exceeded max cluster size defined by cluster_matrix_size (%i)" % m_size)
+        raise ClusterSizeExceeded
 
+    # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
     ci['x'] = min_x
     ci['y'] = min_y
@@ -177,7 +185,11 @@ def build_cluster(c):
     return ci, cluster
 
 
-def print_cluster_stats(cluster_info, cluster_matrix, cluster_stats):
+class ClusterSizeExceeded(Exception):
+    pass
+
+
+def print_cluster_stats(cluster_info, cluster_stats):
     removed = len(cluster_stats) - len(cluster_info)
     removed_percentage = float(removed / float(len(cluster_info) + removed)) * 100
 
