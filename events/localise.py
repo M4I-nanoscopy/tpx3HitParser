@@ -11,7 +11,7 @@ from tqdm import tqdm
 logger = logging.getLogger('root')
 
 
-def localize_events(cluster_matrix, cluster_info, method):
+def localise_events(cluster_matrix, cluster_info, method):
     logger.info("Started event localization on %d events using method %s" % (len(cluster_info), method))
     begin = time.time()
 
@@ -78,7 +78,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
         try:
             x, y = ndimage.measurements.center_of_mass(cluster[0])
         except FloatingPointError:
-            logger.warn("Could not calculate center of mass: empty cluster. Cluster_info: %g" % cluster_info[idx])
+            logger.warn("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
             x, y = 0, 0
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
@@ -95,6 +95,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
 
 def cnn(cluster_matrix, cluster_info, events):
+    # Do keras imports here, as importing earlier may raise errors unnecessary when keras will not be used
     from keras.models import load_model
     from keras import backend as K
 

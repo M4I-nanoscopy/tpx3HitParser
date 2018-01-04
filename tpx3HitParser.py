@@ -63,7 +63,7 @@ def main():
             w['cluster_info'] = cluster_info
 
     if settings.E:
-        e = events.localize_events(cluster_matrix, cluster_info, settings.algorithm)
+        e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
 
         if settings.store_events:
             w['events'] = e

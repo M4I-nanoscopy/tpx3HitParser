@@ -1,1 +1,1 @@
-from localize import localize_events
+from localise import localise_events
