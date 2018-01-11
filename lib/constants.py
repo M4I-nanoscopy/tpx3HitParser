@@ -5,7 +5,7 @@ dt_hit = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.uint8),
     ('y', numpy.uint8),
-    ('ToT', numpy.uint8),
+    ('ToT', numpy.uint16),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
 ])

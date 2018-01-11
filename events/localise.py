@@ -127,6 +127,7 @@ def cnn(cluster_matrix, cluster_info, events):
     # already fill the event matrix
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
+    # TODO: This can be made quicker
     for idx, p in enumerate(predictions):
         events[idx]['chipId'] = cluster_info[idx]['chipId']
         events[idx]['x'] = cluster_info[idx]['x'] + p[0]
