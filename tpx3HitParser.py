@@ -39,14 +39,6 @@ def main():
         f = h5py.File(settings.hits, 'r')
         hits = f['hits'][()]
 
-    if settings.frame_hits:
-        frame = frames.build(hits)
-
-        if settings.stats:
-            frames.stats(frame)
-
-        frames.show(frame)
-
     if settings.spidr_stats:
         frames.spidr_time_stats(hits)
 

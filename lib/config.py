@@ -81,8 +81,6 @@ def parse_config(argv=None):
     misc_group = parser.add_argument_group('miscellaneous arguments')
     misc_group.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats')
     misc_group.add_argument("--cluster_stats", action='store_true', help='Print cluster stats')
-    misc_group.add_argument("--frame_hits", action='store_true', help='Show counting mode frame of hits')
-    misc_group.add_argument("--stats", action='store_true', help='Print hit frame stats')
 
     # Constants
     c_group = parser.add_argument_group('constants')
