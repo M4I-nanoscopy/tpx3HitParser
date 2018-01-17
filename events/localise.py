@@ -7,6 +7,8 @@ import numpy as np
 import os
 import lib
 from tqdm import tqdm
+# https://github.com/tqdm/tqdm/issues/481
+tqdm.monitor_interval = 0
 
 logger = logging.getLogger('root')
 
@@ -36,8 +38,6 @@ def centroid(cluster_matrix, cluster_info, events):
     results = list()
 
     # Progress bar
-    # Disable monitor thread, was throwing errors
-    tqdm.monitor_interval = 0
     progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
 
     # First split clusters in chunks
