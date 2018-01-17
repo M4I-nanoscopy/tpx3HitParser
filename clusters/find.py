@@ -1,3 +1,4 @@
+import _tkinter
 from matplotlib import patches
 from tqdm import tqdm
 import lib
@@ -196,7 +197,11 @@ def print_cluster_stats(cluster_info, cluster_stats):
     logger.info("Removed %d clusters and single hits (%d percent)" % (removed, removed_percentage))
 
     # Figure
-    fig, ax = plt.subplots()
+    try:
+        fig, ax = plt.subplots()
+    except _tkinter.TclError as e:
+        logger.error('Could not display cluster_stats plot. Error message was: %s' % e.message)
+        return
 
     # Make 2d hist
     cmap = plt.get_cmap('viridis')
