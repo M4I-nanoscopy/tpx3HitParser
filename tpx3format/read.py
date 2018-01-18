@@ -30,8 +30,8 @@ def read_raw(file_name, cores):
     logger.info("Reading file %s, guestimating %d hits" % (f_name, guestimate))
     progress_bar = tqdm(total=guestimate, unit="hits", smoothing=0.1, unit_scale=True)
 
-    def pb_update(r):
-        progress_bar.update(len(r))
+    def pb_update(res):
+        progress_bar.update(len(res))
 
     control_events = []
     results = []
@@ -52,6 +52,11 @@ def read_raw(file_name, cores):
 
         chip_nr = header[4]
         mode = header[5]
+
+        # Check for mode
+        if mode != 0:
+            logger.warn("Found data packet with mode %d. Code has been developed for mode 0." % mode)
+
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 
         # If this is a size 1 package, this could be control event package
@@ -74,6 +79,7 @@ def read_raw(file_name, cores):
 
             n_hits += size / 8
 
+        # Break early when max_hits has been reached
         if 0 < lib.config.settings.max_hits < n_hits:
             break
 
