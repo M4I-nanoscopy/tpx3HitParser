@@ -207,7 +207,7 @@ def print_cluster_stats(cluster_info, cluster_stats):
     cmap = plt.get_cmap('viridis')
     cmap.set_under('w', 1)
     bins = [np.arange(0, 700, 50), np.arange(0, 16, 1)]
-    plt.hist2d(cluster_stats[:, 1], cluster_stats[:, 0], cmap=cmap, vmin=1, range=((0, 600), (0, 14)), bins=bins)
+    plt.hist2d(cluster_stats[:, 1], cluster_stats[:, 0], cmap=cmap, vmin=1, range=((0, 700), (0, 16)), bins=bins)
 
     # Add box showing filter values
     settings = lib.config.settings

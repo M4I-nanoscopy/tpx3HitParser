@@ -1,8 +1,34 @@
+import logging
 import os
 import subprocess
+import h5py
 
-# Check file, check empty, check input file
+logger = logging.getLogger('root')
 
+class io:
+    write = None
+    read = None
+
+    def open_read(self, file_name):
+        f = h5py.File(settings.hits, 'r')
+
+    def open_write(self, file_name, overwrite, ammend):
+        if os.path.exists(file_name) and not overwrite:
+            logger.error("Output file already exists and --overwrite not specified.")
+            raise IOException
+
+        if ammend:
+            mode = 'a+'
+        else:
+            mode = 'w'
+
+        try:
+            self.write = h5py.File(file_name, mode)
+        except:
+            raise
+
+class IOException(Exception):
+    pass
 
 # Return the git revision as a string
 def git_version():
