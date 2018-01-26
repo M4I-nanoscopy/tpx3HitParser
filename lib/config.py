@@ -95,10 +95,9 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_min_sum_tot", type=int, metavar='N', help='Minimum cluster sum tot')
     c_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
                                  help='Number of hits to consider at once (memory intensive!)')
-    c_group.add_argument("--cluster_matrix_size", type=int, metavar='N',
-                                 help='Size of the resulting cluster matrix')
-    c_group.add_argument("--event_chunk_size", type=int, metavar='N',
-                         help='Number of events to process at once')
+    c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
+    c_group.add_argument("--event_chunk_size", type=int, metavar='N', help='Number of events to process at once')
+    c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
 
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')

@@ -41,8 +41,7 @@ def centroid(cluster_matrix, cluster_info, events):
     progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
 
     # First split clusters in chunks
-    # TODO: make this configurable?
-    chunk_size = 10000
+    chunk_size = lib.config.settings.event_chunk_size
     if chunk_size > len(cluster_info):
         logger.warn("Cluster chunk size is larger than amount of events")
         chunk_size = len(cluster_info)
@@ -116,18 +115,24 @@ def cnn(cluster_matrix, cluster_info, events):
 
     # Load model
     package_directory = os.path.dirname(os.path.abspath(__file__))
-    model = load_model(os.path.join(package_directory, 'cnn_models', 'model-tottoa-g4medipix-300si-200kev-set11.h5'))
+    model_path = os.path.join(package_directory, 'cnn_models', lib.config.settings.event_cnn_model)
 
+    if not os.path.exists(model_path):
+        logger.error('CNN model %s does not exist.' % model_path)
+        raise Exception('CNN model %s does not exist.' % model_path)
+
+    model = load_model(model_path)
+
+    # Check model shape and input shape
     if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
         logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size?' % (cluster_matrix.shape, model.layers[0].input_shape))
         raise Exception
 
     # Run CNN prediction
-    # TODO: use predict_on_batch and roll our own batches. This allows us to, while processing to
-    # already fill the event matrix
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
-    # TODO: This can be made quicker
+    # TODO: use predict_on_batch and roll our own batches. This allows us to, while processing to
+    # already fill the event matrix
     for idx, p in enumerate(predictions):
         events[idx]['chipId'] = cluster_info[idx]['chipId']
         events[idx]['x'] = cluster_info[idx]['x'] + p[0]
