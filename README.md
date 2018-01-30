@@ -7,7 +7,7 @@ git clone https://github.com/M4I-nanoscopy/tpx3HitParser.git
 cd tpx3HitParser
 ```
 
-Recommended way is to use a Python virtualenv.  But this is optional.
+Recommended way is to use a Python virtualenv. But this is optional.
 
 ```
 virtualenv tpx3
