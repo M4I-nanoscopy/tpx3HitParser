@@ -56,7 +56,7 @@ def find_clusters(hits):
     if lib.config.settings.cluster_stats:
         print_cluster_stats(np.array(cluster_info), np.array(cluster_stats))
 
-    return cluster_info, cluster_matrix
+    return np.array(cluster_info), np.array(cluster_matrix)
 
 
 def find_cluster_matches(hits):
