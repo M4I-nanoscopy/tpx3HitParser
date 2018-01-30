@@ -83,12 +83,15 @@ class io:
         self.write['cluster_info'] = cluster_info
         self.write_base_attributes('cluster_info')
 
-    def store_events(self, events, algorithm):
+    def store_events(self, events, algorithm, cnn_model):
         # TODO: Implement amend
 
         self.write['events'] = events
         self.write_base_attributes('events')
         self.write['events'].attrs['algorithm'] = algorithm
+
+        if algorithm == 'cnn':
+            self.write['events'].attrs['cnn_model'] = cnn_model
 
 
 class IOException(Exception):

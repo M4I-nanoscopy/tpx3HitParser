@@ -73,8 +73,7 @@ def main():
         e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
 
         if settings.store_events:
-            io.store_events(e, settings.algorithm)
-
+            io.store_events(e, settings.algorithm, settings.event_cnn_model)
 
     if settings.output:
         io.close_write()
