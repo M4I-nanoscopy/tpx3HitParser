@@ -11,7 +11,6 @@ logger = logging.getLogger('root')
 
 class io:
     write = None
-    read = None
     amend = False
 
     def __init__(self):
@@ -35,7 +34,6 @@ class io:
     def close_write(self):
         self.write.close()
 
-    # Return the git revision as a string
     @staticmethod
     def git_version():
         try:
@@ -59,10 +57,10 @@ class io:
     def store_hits(self, hits, control_events, file_name):
 
         if self.amend and 'hits' in self.write:
-            logger.warn('Overwriting existing hits dataset')
+            logger.warn('Overwriting existing /hits dataset')
             del self.write['hits']
         if self.amend and 'control' in self.write:
-            logger.warn('Overwriting existing control dataset')
+            logger.warn('Overwriting existing /control dataset')
             del self.write['control']
 
         self.write['hits'] = hits
@@ -73,7 +71,13 @@ class io:
         self.write['control'].attrs['input_file_name'] = file_name
 
     def store_clusters(self, cluster_matrix, cluster_info):
-        # TODO: Implement amend
+
+        if self.amend and 'clusters' in self.write:
+            logger.warn('Overwriting existing /clusters dataset')
+            del self.write['clusters']
+        if self.amend and 'cluster_info' in self.write:
+            logger.warn('Overwriting existing /cluster_info dataset')
+            del self.write['cluster_info']
 
         self.write['clusters'] = cluster_matrix
         self.write_base_attributes('clusters')
@@ -81,7 +85,10 @@ class io:
         self.write_base_attributes('cluster_info')
 
     def store_events(self, events, algorithm, cnn_model):
-        # TODO: Implement amend
+
+        if self.amend and 'events' in self.write:
+            logger.warn('Overwriting existing /events dataset')
+            del self.write['events']
 
         self.write['events'] = events
         self.write_base_attributes('events')
