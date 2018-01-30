@@ -17,10 +17,6 @@ class io:
     def __init__(self):
         pass
 
-    def open_read(self, file_name):
-        # TODO: Implement reading of files
-        self.read = h5py.File(file_name, 'r')
-
     def open_write(self, file_name, overwrite, amend):
         if os.path.exists(file_name) and not (overwrite or amend):
             raise IOException("Output file already exists and --overwrite or --amend not specified.")
@@ -40,7 +36,8 @@ class io:
         self.write.close()
 
     # Return the git revision as a string
-    def git_version(self):
+    @staticmethod
+    def git_version():
         try:
             out = lib.minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
             git_revision = out.strip().decode('ascii')
@@ -92,6 +89,31 @@ class io:
 
         if algorithm == 'cnn':
             self.write['events'].attrs['cnn_model'] = cnn_model
+
+    def read_h5(self, file_name):
+        if not os.path.exists(file_name):
+            raise IOException("File %s for reading does not exist")
+
+        return h5py.File(file_name, 'r')
+
+    def read_hits(self, file_name):
+        f = self.read_h5(file_name)
+
+        if not 'hits' in f:
+            raise IOException("File %s does not have a /hits dataset" % file_name)
+
+        return f['hits'][()]
+
+    def read_clusters(self, file_name):
+        f = self.read_h5(file_name)
+
+        if not 'clusters' in f:
+            raise IOException("File %s does not have a /clusters dataset" % file_name)
+
+        if not 'cluster_info' in f:
+            raise IOException("File %s does not have a /cluster_info dataset" % file_name)
+
+        return f['clusters'][()], f['cluster_info'][()]
 
 
 class IOException(Exception):

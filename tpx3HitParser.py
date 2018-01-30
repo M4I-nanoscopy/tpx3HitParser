@@ -44,8 +44,12 @@ def main():
         hits_input_file = settings.raw
 
     if settings.hits:
-        f = h5py.File(settings.hits, 'r')
-        hits = f['hits'][()]
+        try:
+            hits = io.read_hits(settings.hits)
+        except lib.IOException as e:
+            logger.error(e.message)
+            return 1
+
         hits_input_file = settings.hits
 
     if settings.store_hits:
@@ -61,9 +65,11 @@ def main():
         cluster_info, cluster_matrix = clusters.find_clusters(hits)
 
     if settings.clusters:
-        f = h5py.File(settings.clusters, 'r')
-        cluster_matrix = f['clusters'][()]
-        cluster_info = f['cluster_info'][()]
+        try:
+            cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
+        except lib.IOException as e:
+            logger.error(e.message)
+            return 1
 
     if settings.store_clusters:
         io.store_clusters(cluster_matrix, cluster_info)
