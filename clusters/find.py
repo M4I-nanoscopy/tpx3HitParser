@@ -114,12 +114,12 @@ def find_cluster_matches(settings, hits):
         # Only use clean clusters
         if clean_cluster(cluster, settings):
             try:
-                ci, cm = build_cluster(cluster)
+                ci, cm = build_cluster(cluster, settings)
                 cluster_info.append(ci)
                 cluster_matrix.append(cm)
             except ClusterSizeExceeded:
                 logger.warn("Cluster exceeded max cluster size "
-                            "defined by cluster_matrix_size (%i)" % lib.config.settings.cluster_matrix_size)
+                            "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
                 pass
 
         # Build cluster stats if requested
@@ -146,8 +146,8 @@ def clean_cluster(c, settings):
 
 
 # This builds a cluster from an event list, and the corresponding cluster_info array
-def build_cluster(c):
-    m_size = lib.config.settings.cluster_matrix_size
+def build_cluster(c, settings):
+    m_size = settings.cluster_matrix_size
     ci = np.zeros(1, dtype=dt_ci)
     cluster = np.zeros((2, m_size, m_size), 'uint8')
 
