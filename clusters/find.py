@@ -30,7 +30,8 @@ def find_clusters(hits):
     for group in groups:
         # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over
         # the process bus. This could be improved maybe with better shared mem usage
-        results.append(pool.apply_async(find_cluster_matches, args=([group])))
+        # The `lib.config.settings` is passed here as Windows will not pass it as global var
+        results.append(pool.apply_async(find_cluster_matches, args=([lib.config.settings, group])))
 
     pool.close()
 
@@ -59,7 +60,7 @@ def find_clusters(hits):
     return np.array(cluster_info), np.array(cluster_matrix)
 
 
-def find_cluster_matches(hits):
+def find_cluster_matches(settings, hits):
     # TODO: Move this var to configuration options
     time_size = 50
 
@@ -111,7 +112,7 @@ def find_cluster_matches(hits):
         cluster = hits[select]
 
         # Only use clean clusters
-        if clean_cluster(cluster):
+        if clean_cluster(cluster, settings):
             try:
                 ci, cm = build_cluster(cluster)
                 cluster_info.append(ci)
@@ -122,7 +123,7 @@ def find_cluster_matches(hits):
                 pass
 
         # Build cluster stats if requested
-        if lib.config.settings.cluster_stats is True and len(cluster) > 0:
+        if settings.cluster_stats is True and len(cluster) > 0:
             stats = [len(cluster), np.sum(cluster['ToT'])]
             cluster_stats.append(stats)
 
@@ -133,11 +134,9 @@ def find_cluster_matches(hits):
 
 
 # Clean clusters based on their summed ToT and cluster size
-def clean_cluster(c):
+def clean_cluster(c, settings):
     summed = np.sum(c['ToT'])
     size = len(c)
-
-    settings = lib.config.settings
 
     if settings.cluster_min_sum_tot < summed < settings.cluster_max_sum_tot \
             and settings.cluster_min_size < size < settings.cluster_max_size:
