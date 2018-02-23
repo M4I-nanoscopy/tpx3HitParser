@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
 import sys
+
+# Get rid of a harmless h5py FutureWarning. Can be removed with a new release of h5py
+# https://github.com/h5py/h5py/issues/961
+import warnings
+warnings.filterwarnings('ignore', 'Conversion of the second argument of issubdtype from .*',)
+
 import lib
 import frames
 import clusters
