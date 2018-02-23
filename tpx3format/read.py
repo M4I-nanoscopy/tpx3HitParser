@@ -9,14 +9,9 @@ import os
 
 logger = logging.getLogger('root')
 
-f_name = ""
-
 
 def read_raw(file_name, cores):
-    global f_name
-    f_name = file_name
-
-    f = file(f_name, "rb")
+    f = file(file_name, "rb")
     guestimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages
@@ -27,7 +22,7 @@ def read_raw(file_name, cores):
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker)
 
     # Make progress bar to keep track of hits being read
-    logger.info("Reading file %s, guestimating %d hits" % (f_name, guestimate))
+    logger.info("Reading file %s, guestimating %d hits" % (file_name, guestimate))
     progress_bar = tqdm(total=guestimate, unit="hits", smoothing=0.1, unit_scale=True)
 
     def pb_update(res):
@@ -74,7 +69,7 @@ def read_raw(file_name, cores):
 
             # Chunk is ready to be processed, off load to sub process
             if i == max_positions:
-                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions)], callback=pb_update))
+                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name], callback=pb_update))
                 i = 0
 
             n_hits += size / 8
@@ -85,11 +80,11 @@ def read_raw(file_name, cores):
 
         f.seek(size, 1)
 
-    logger.info("File %s contains %d hits in mode %d " % (f_name, n_hits, mode))
+    logger.info("File %s contains %d hits in mode %d " % (file_name, n_hits, mode))
     progress_bar.total = n_hits
 
     # Parse remaining bit of packages
-    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i]], callback=pb_update))
+    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name], callback=pb_update))
     pool.close()
 
     hits = np.empty(n_hits, dtype=dt_hit)
@@ -132,7 +127,7 @@ def remove_cross_hits(hits):
     hits = np.delete(hits, indeces[ind], axis=0)
 
     sum = int(np.sum(ind))
-    logger.info("Removed %d (%d percent) hits in chip border pixels" % ( sum, float(sum) / float(len(hits)) * 100 ))
+    logger.info("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
 
     return hits
 
@@ -190,11 +185,9 @@ def parse_control_packet(f, pos):
     return [pkg >> 48, chip_id, time]
 
 
-def parse_data_packages(positions):
-    global f_name
-
+def parse_data_packages(positions, file_name):
     # Reopen file in new process
-    f = file(f_name, "rb")
+    f = file(file_name, "rb")
 
     n_hits = sum(pos[1] / 8 for pos in positions)
     hits = np.empty(n_hits, dtype=dt_hit)
