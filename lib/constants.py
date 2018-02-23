@@ -1,12 +1,12 @@
 import numpy
 
-VERSION = '0.4.0'
+VERSION = '0.5.0'
 
 # Hit matrix data type
 dt_hit = numpy.dtype([
     ('chipId', numpy.uint8),
-    ('x', numpy.uint8),
-    ('y', numpy.uint8),
+    ('x', numpy.uint16),
+    ('y', numpy.uint16),
     ('ToT', numpy.uint16),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
@@ -15,8 +15,8 @@ dt_hit = numpy.dtype([
 # Cluster info key indeces
 dt_ci = numpy.dtype([
     ('chipId', numpy.uint8),
-    ('x', numpy.uint8),
-    ('y', numpy.uint8),
+    ('x', numpy.uint16),
+    ('y', numpy.uint16),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
 ])

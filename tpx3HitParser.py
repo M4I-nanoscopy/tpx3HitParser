@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-import h5py
 import lib
 import frames
 import clusters

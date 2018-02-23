@@ -46,6 +46,10 @@ def parse_config(argv=None):
         config_parser = ConfigParser.SafeConfigParser()
         config_parser.read([conf_file])
         defaults = dict(config_parser.items("Defaults"))
+
+        # Fix boolean values
+        defaults['hits_remove_cross'] = config_parser.getboolean('Defaults', 'hits_remove_cross')
+        defaults['hits_combine_chips'] = config_parser.getboolean('Defaults', 'hits_combine_chips')
     else:
         logger.warn("No config file being used for setting constant defaults")
 
@@ -88,7 +92,10 @@ def parse_config(argv=None):
     c_group = parser.add_argument_group('constants')
     c_group.add_argument("--cores", type=int, help='Number of cores to use')
     c_group.add_argument("--max_hits", metavar='N', type=int, help='Maximum number of hits to read (0: infinite)')
-    c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
+    c_group.add_argument("--hits_remove_cross", action='store_true',
+                         help='Remove the middle border pixels between the chips')
+    c_group.add_argument("--hits_combine_chips", action='store_true',
+                         help='Combine the chips to one matrix')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
     c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )
@@ -98,6 +105,7 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
     c_group.add_argument("--event_chunk_size", type=int, metavar='N', help='Number of events to process at once')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
+    c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
 
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')

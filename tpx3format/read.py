@@ -101,9 +101,63 @@ def read_raw(file_name, cores):
         hits[offset:offset + len(hits_chunk)] = hits_chunk
         offset += len(hits_chunk)
 
+    if lib.config.settings.hits_remove_cross:
+        hits = remove_cross_hits(hits)
+
+    if lib.config.settings.hits_combine_chips:
+        combine_chips(hits)
+
     progress_bar.close()
 
     return hits, control_events
+
+
+def remove_cross_hits(hits):
+    # Maybe not the cleanest way to do this, but it's fast
+    ind_3x = (hits['chipId'] == 3) & (hits['x'] == 255)
+    ind_3y = (hits['chipId'] == 3) & (hits['y'] == 255)
+
+    ind_0x = (hits['chipId'] == 0) & (hits['x'] == 0)
+    ind_0y = (hits['chipId'] == 0) & (hits['y'] == 255)
+
+    ind_1x = (hits['chipId'] == 1) & (hits['x'] == 255)
+    ind_1y = (hits['chipId'] == 1) & (hits['y'] == 255)
+
+    ind_2x = (hits['chipId'] == 2) & (hits['x'] == 0)
+    ind_2y = (hits['chipId'] == 2) & (hits['y'] == 255)
+
+    # Combine all found hits
+    ind = ind_3x | ind_3y | ind_0x | ind_0y | ind_1x | ind_1y | ind_2x | ind_2y
+    indeces = np.arange(len(hits))
+    hits = np.delete(hits, indeces[ind], axis=0)
+
+    sum = int(np.sum(ind))
+    logger.info("Removed %d (%d percent) hits in chip border pixels" % ( sum, float(sum) / float(len(hits)) * 100 ))
+
+    return hits
+
+
+def combine_chips(hits):
+    # Chip are orientated like this
+    # 3 0
+    # 2 1
+    # Chips 1 and 2 are also flipped
+
+    # ChipId 0
+    ind = [hits['chipId'] == 0]
+    hits['x'][ind] = hits['x'][ind] + 260
+
+    # ChipId 1
+    ind = [hits['chipId'] == 1]
+    hits['x'][ind] = 255 - hits['x'][ind] + 260
+    hits['y'][ind] = 255 - hits['y'][ind] + 260
+
+    # ChipId 2
+    ind = [hits['chipId'] == 2]
+    hits['x'][ind] = 255 - hits['x'][ind]
+    hits['y'][ind] = 255 - hits['y'][ind] + 260
+
+    logger.debug("Combined chips to one matrix")
 
 
 def parse_control_packet(f, pos):
@@ -183,7 +237,3 @@ def parse_data_package(f, pos):
     else:
         logger.error('Failed parsing data package')
         yield None
-
-
-def chunks(l, n):
-    return [l[i:i + n] for i in range(0, len(l), n)]
