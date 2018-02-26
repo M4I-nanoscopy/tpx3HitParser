@@ -15,7 +15,7 @@ def read_raw(file_name, cores):
     guesstimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages
-    max_positions = 1000
+    max_positions = 100
     positions = np.empty((max_positions, 3), dtype='uint32')
 
     # Allocate processing processes
