@@ -16,7 +16,7 @@ logger = logging.getLogger('root')
 def find_clusters(hits):
     logger.info("Started finding clusters")
 
-    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker)
+    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=100)
     results = list()
     begin = time.time()
 

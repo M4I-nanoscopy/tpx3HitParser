@@ -12,18 +12,18 @@ logger = logging.getLogger('root')
 
 def read_raw(file_name, cores):
     f = file(file_name, "rb")
-    guestimate = os.fstat(f.fileno()).st_size / 8
+    guesstimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages
     max_positions = 1000
     positions = np.empty((max_positions, 3), dtype='uint32')
 
     # Allocate processing processes
-    pool = multiprocessing.Pool(cores, initializer=lib.init_worker)
+    pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=100)
 
     # Make progress bar to keep track of hits being read
-    logger.info("Reading file %s, guestimating %d hits" % (file_name, guestimate))
-    progress_bar = tqdm(total=guestimate, unit="hits", smoothing=0.1, unit_scale=True)
+    logger.info("Reading file %s, guesstimating %d hits" % (file_name, guesstimate))
+    progress_bar = tqdm(total=guesstimate, unit="hits", smoothing=0.1, unit_scale=True)
 
     def pb_update(res):
         progress_bar.update(len(res))
@@ -69,7 +69,7 @@ def read_raw(file_name, cores):
 
             # Chunk is ready to be processed, off load to sub process
             if i == max_positions:
-                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name], callback=pb_update))
+                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings], callback=pb_update))
                 i = 0
 
             n_hits += size / 8
@@ -84,7 +84,7 @@ def read_raw(file_name, cores):
     progress_bar.total = n_hits
 
     # Parse remaining bit of packages
-    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name], callback=pb_update))
+    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings], callback=pb_update))
     pool.close()
 
     hits = np.empty(n_hits, dtype=dt_hit)
@@ -95,12 +95,6 @@ def read_raw(file_name, cores):
 
         hits[offset:offset + len(hits_chunk)] = hits_chunk
         offset += len(hits_chunk)
-
-    if lib.config.settings.hits_remove_cross:
-        hits = remove_cross_hits(hits)
-
-    if lib.config.settings.hits_combine_chips:
-        combine_chips(hits)
 
     progress_bar.close()
 
@@ -127,7 +121,7 @@ def remove_cross_hits(hits):
     hits = np.delete(hits, indeces[ind], axis=0)
 
     sum = int(np.sum(ind))
-    logger.info("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
+    logger.debug("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
 
     return hits
 
@@ -185,7 +179,7 @@ def parse_control_packet(f, pos):
     return [pkg >> 48, chip_id, time]
 
 
-def parse_data_packages(positions, file_name):
+def parse_data_packages(positions, file_name, settings):
     # Reopen file in new process
     f = file(file_name, "rb")
 
@@ -198,6 +192,12 @@ def parse_data_packages(positions, file_name):
             if hit is not None:
                 hits[i] = hit
                 i += 1
+
+    if settings.hits_remove_cross:
+        hits = remove_cross_hits(hits)
+
+    if settings.hits_combine_chips:
+        combine_chips(hits)
 
     return hits
 
