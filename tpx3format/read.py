@@ -11,7 +11,7 @@ logger = logging.getLogger('root')
 
 
 def read_raw(file_name, cores):
-    f = file(file_name, "rb")
+    f = open(file_name, "rb")
     guesstimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages
@@ -72,7 +72,7 @@ def read_raw(file_name, cores):
                 results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings], callback=pb_update))
                 i = 0
 
-            n_hits += size / 8
+            n_hits += size // 8
 
         # Break early when max_hits has been reached
         if 0 < lib.config.settings.max_hits < n_hits:
@@ -103,7 +103,7 @@ def read_raw(file_name, cores):
     logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
 
     # Resize hits, because some hits were removed
-    hits = np.resize(hits, offset)
+    hits.resize(offset)
 
     return hits, control_events
 
@@ -188,9 +188,9 @@ def parse_control_packet(f, pos):
 
 def parse_data_packages(positions, file_name, settings):
     # Reopen file in new process
-    f = file(file_name, "rb")
+    f = open(file_name, "rb")
 
-    n_hits = sum(pos[1] / 8 for pos in positions)
+    n_hits = sum(pos[1] // 8 for pos in positions)
     hits = np.empty(n_hits, dtype=dt_hit)
 
     i = 0
@@ -214,16 +214,16 @@ def parse_data_package(f, pos):
     b = f.read(pos[1])
 
     # Read pixels as unsigned longs. pos[1] contains number of bytes per position. Unsigned long is 8 bytes
-    struct_fmt = "<{}Q".format(pos[1] / 8)
+    struct_fmt = "<{}Q".format(pos[1] // 8)
     pixels = struct.unpack(struct_fmt, b)
 
     time = pixels[0] & 0xffff
 
     if pixels[0] >> 60 == 0xb and pos[2] < 4:
         for i, pixel in enumerate(pixels):
-            dcol = (pixel & 0x0FE0000000000000L) >> 52
-            spix = (pixel & 0x001F800000000000L) >> 45
-            pix = (pixel & 0x0000700000000000L) >> 44
+            dcol = (pixel & 0x0FE0000000000000) >> 52
+            spix = (pixel & 0x001F800000000000) >> 45
+            pix = (pixel & 0x0000700000000000) >> 44
 
             x = dcol + pix / 4
             y = spix + (pix & 0x3)

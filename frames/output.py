@@ -9,18 +9,18 @@ def spidr_time_stats(events):
 
     tick = 26.843 / 65536.
 
-    print "SPIDR time start: %d" % spidr[0]
-    print "SPIDR time end: %d" % spidr[-1]
-    print "SPIDR time min: %d" % spidr.min()
-    print "SPIDR time max: %d" % spidr.max()
+    print("SPIDR time start: %d" % spidr[0])
+    print("SPIDR time end: %d" % spidr[-1])
+    print("SPIDR time min: %d" % spidr.min())
+    print("SPIDR time max: %d" % spidr.max())
 
     # print "Indices where SPIDR time jumps: "
     # diff = np.where(abs(np.diff(spidr)) > 1000000)
     # print diff
 
-    print "Seconds exposure time (guess):"
+    print("Seconds exposure time (guess):")
     # print (spidr[-1] - spidr[0]) * tick + len(diff) * 26.843
-    print float(spidr[-1] - spidr[0]) * tick
+    print(float(spidr[-1] - spidr[0]) * tick)
 
     plot_timers(events)
 
