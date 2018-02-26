@@ -98,6 +98,13 @@ def read_raw(file_name, cores):
 
     progress_bar.close()
 
+    # TODO: This is an indirect way of calculating this!
+    diff = len(hits) - offset
+    logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
+
+    # Resize hits, because some hits were removed
+    hits = np.resize(hits, offset)
+
     return hits, control_events
 
 
@@ -121,7 +128,7 @@ def remove_cross_hits(hits):
     hits = np.delete(hits, indeces[ind], axis=0)
 
     sum = int(np.sum(ind))
-    logger.debug("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
+    # logger.debug("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
 
     return hits
 
@@ -146,7 +153,7 @@ def combine_chips(hits):
     hits['x'][ind] = 255 - hits['x'][ind]
     hits['y'][ind] = 255 - hits['y'][ind] + 260
 
-    logger.debug("Combined chips to one matrix")
+    # logger.debug("Combined chips to one matrix")
 
 
 def parse_control_packet(f, pos):

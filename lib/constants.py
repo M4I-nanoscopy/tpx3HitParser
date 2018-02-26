@@ -1,6 +1,6 @@
 import numpy
 
-VERSION = '0.5.0'
+VERSION = '0.5.1'
 
 # Hit matrix data type
 dt_hit = numpy.dtype([
