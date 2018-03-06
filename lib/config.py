@@ -90,12 +90,10 @@ def parse_config(argv=None):
 
     # Constants
     c_group = parser.add_argument_group('constants')
-    c_group.add_argument("--cores", type=int, help='Number of cores to use')
+    c_group.add_argument("--cores", metavar='N', type=int, help='Number of cores to use')
     c_group.add_argument("--max_hits", metavar='N', type=int, help='Maximum number of hits to read (0: infinite)')
-    c_group.add_argument("--hits_remove_cross", action='store_true',
-                         help='Remove the middle border pixels between the chips')
-    c_group.add_argument("--hits_combine_chips", action='store_true',
-                         help='Combine the chips to one matrix')
+    c_group.add_argument("--hits_remove_cross", metavar='0/1',  type=str2bool, help='Remove the middle border pixels between the chips')
+    c_group.add_argument("--hits_combine_chips",metavar='0/1', type=str2bool, help='Combine the chips to one matrix')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
     c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )
@@ -115,3 +113,13 @@ def parse_config(argv=None):
 
     if (settings.store_hits or settings.store_clusters or settings.store_events) and not settings.output:
         parser.error('An output file (-o or --output) is required when specifying a store option')
+
+
+# https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
