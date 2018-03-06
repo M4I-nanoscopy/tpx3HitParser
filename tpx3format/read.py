@@ -7,6 +7,7 @@ import lib
 from tqdm import tqdm
 import os
 
+# TODO: Logging does not work for multiprocessing processes on Windows
 logger = logging.getLogger('root')
 
 
@@ -191,11 +192,12 @@ def parse_data_packages(positions, file_name, settings):
     f = open(file_name, "rb")
 
     n_hits = sum(pos[1] // 8 for pos in positions)
-    hits = np.empty(n_hits, dtype=dt_hit)
+    hits = np.zeros(n_hits, dtype=dt_hit)
 
     i = 0
     for pos in positions:
         for hit in parse_data_package(f, pos):
+            # TODO: A data package which failed to parse will now leave an row with zeros in the hits.
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -235,5 +237,5 @@ def parse_data_package(f, pos):
 
             yield (pos[2], x, y, ToT, CToA, time)
     else:
-        logger.error('Failed parsing data package')
+        logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
