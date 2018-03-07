@@ -134,19 +134,22 @@ def remove_cross_hits(hits):
     return hits
 
 
-def combine_chips(hits):
+def combine_chips(hits, hits_cross_extra_offset):
     # Chip are orientated like this
     # 2 1
     # 3 0
 
+    # Calculate extra offset required for the cross pixels
+    offset = 256 + 2 * hits_cross_extra_offset
+
     # ChipId 0
     ind = [hits['chipId'] == 0]
-    hits['x'][ind] = hits['x'][ind] + 260
-    hits['y'][ind] = 255 - hits['y'][ind] + 260
+    hits['x'][ind] = hits['x'][ind] + offset
+    hits['y'][ind] = 255 - hits['y'][ind] + offset
 
     # ChipId 1
     ind = [hits['chipId'] == 1]
-    hits['x'][ind] = 255 - hits['x'][ind] + 260
+    hits['x'][ind] = 255 - hits['x'][ind] + offset
     # hits['y'][ind] = hits['y'][ind]
 
     # ChipId 2
@@ -156,7 +159,7 @@ def combine_chips(hits):
 
     ind = [hits['chipId'] == 3]
     # hits['x'][ind] = hits['x'][ind]
-    hits['y'][ind] = 255 - hits['y'][ind] + 260
+    hits['y'][ind] = 255 - hits['y'][ind] + offset
 
     # logger.debug("Combined chips to one matrix")
 
@@ -210,7 +213,7 @@ def parse_data_packages(positions, file_name, settings):
         hits = remove_cross_hits(hits)
 
     if settings.hits_combine_chips:
-        combine_chips(hits)
+        combine_chips(hits, settings.hits_cross_extra_offset)
 
     return hits
 
