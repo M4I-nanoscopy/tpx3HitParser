@@ -136,22 +136,26 @@ def remove_cross_hits(hits):
 
 def combine_chips(hits):
     # Chip are orientated like this
-    # 3 0
     # 2 1
-    # Chips 1 and 2 are also flipped
+    # 3 0
 
     # ChipId 0
     ind = [hits['chipId'] == 0]
     hits['x'][ind] = hits['x'][ind] + 260
+    hits['y'][ind] = 255 - hits['y'][ind] + 260
 
     # ChipId 1
     ind = [hits['chipId'] == 1]
     hits['x'][ind] = 255 - hits['x'][ind] + 260
-    hits['y'][ind] = 255 - hits['y'][ind] + 260
+    # hits['y'][ind] = hits['y'][ind]
 
     # ChipId 2
     ind = [hits['chipId'] == 2]
     hits['x'][ind] = 255 - hits['x'][ind]
+    # hits['y'][ind] = hits['y'][ind]
+
+    ind = [hits['chipId'] == 3]
+    # hits['x'][ind] = hits['x'][ind]
     hits['y'][ind] = 255 - hits['y'][ind] + 260
 
     # logger.debug("Combined chips to one matrix")
