@@ -257,7 +257,7 @@ def parse_data_package(f, pos):
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
-            ToT_correct = ToT + correct_tot[ToT][x][y][pos[2]]
+            ToT_correct = ToT + correct_tot[ToT][y][x][pos[2]]
             #yield (pos[2], x, y, ToT, CToA, time)
             yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
