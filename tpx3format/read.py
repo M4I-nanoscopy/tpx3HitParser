@@ -1,6 +1,8 @@
 import logging
 import multiprocessing
 import struct
+
+import h5py
 import numpy as np
 from lib.constants import *
 import lib
@@ -18,6 +20,9 @@ def read_raw(file_name, cores):
     # Allocate an array to hold positions of packages
     max_positions = 100
     positions = np.empty((max_positions, 3), dtype='uint32')
+
+    global correct_tot
+    correct_tot = read_tot_correct(lib.config.settings.hits_tot_correct_file)
 
     # Allocate processing processes
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=100)
@@ -99,14 +104,23 @@ def read_raw(file_name, cores):
 
     progress_bar.close()
 
-    # TODO: This is an indirect way of calculating this!
-    diff = len(hits) - offset
-    logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
+    if lib.config.settings.hits_remove_cross:
+        # TODO: This is an indirect way of calculating this!
+        diff = len(hits) - offset
+        logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
 
     # Resize hits, because some hits were removed
     hits.resize(offset)
 
     return hits, control_events
+
+
+def read_tot_correct(correct_file):
+    f = h5py.File(correct_file, 'r')
+
+    data = f['tot_correction'][()]
+
+    return data
 
 
 def remove_cross_hits(hits):
@@ -219,6 +233,7 @@ def parse_data_packages(positions, file_name, settings):
 
 
 def parse_data_package(f, pos):
+    global correct_tot
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -242,7 +257,9 @@ def parse_data_package(f, pos):
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
-            yield (pos[2], x, y, ToT, CToA, time)
+            ToT_correct = ToT + correct_tot[ToT][x][y][pos[2]]
+            #yield (pos[2], x, y, ToT, CToA, time)
+            yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
