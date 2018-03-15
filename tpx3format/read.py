@@ -15,21 +15,21 @@ logger = logging.getLogger('root')
 
 def read_raw(file_name, cores):
     f = open(file_name, "rb")
-    guesstimate = os.fstat(f.fileno()).st_size / 8
+    estimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages
     max_positions = 100
     positions = np.empty((max_positions, 3), dtype='uint32')
 
-    global correct_tot
-    correct_tot = read_tot_correct(lib.config.settings.hits_tot_correct_file)
+    # Check if we have a loadable ToT correction file
+    check_tot_correction(lib.config.settings.hits_tot_correct_file)
 
     # Allocate processing processes
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=100)
 
     # Make progress bar to keep track of hits being read
-    logger.info("Reading file %s, guesstimating %d hits" % (file_name, guesstimate))
-    progress_bar = tqdm(total=guesstimate, unit="hits", smoothing=0.1, unit_scale=True)
+    logger.info("Reading file %s, estimating %d hits" % (file_name, estimate))
+    progress_bar = tqdm(total=estimate, unit="hits", smoothing=0.1, unit_scale=True)
 
     def pb_update(res):
         progress_bar.update(len(res))
@@ -75,7 +75,9 @@ def read_raw(file_name, cores):
 
             # Chunk is ready to be processed, off load to sub process
             if i == max_positions:
-                results.append(pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings], callback=pb_update))
+                results.append(
+                    pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings],
+                                     callback=pb_update))
                 i = 0
 
             n_hits += size // 8
@@ -90,7 +92,8 @@ def read_raw(file_name, cores):
     progress_bar.total = n_hits
 
     # Parse remaining bit of packages
-    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings], callback=pb_update))
+    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings],
+                                    callback=pb_update))
     pool.close()
 
     hits = np.empty(n_hits, dtype=dt_hit)
@@ -115,12 +118,35 @@ def read_raw(file_name, cores):
     return hits, control_events
 
 
-def read_tot_correct(correct_file):
+def check_tot_correction(correct_file):
+    if correct_file == "0":
+        # No ToT correction requested
+        return True
+
+    if not os.path.exists(correct_file):
+        raise Exception("ToT correction file (%s) does not exists" % correct_file)
+
     f = h5py.File(correct_file, 'r')
 
-    data = f['tot_correction'][()]
+    if 'tot_correction' not in f:
+        raise Exception("ToT correction file does not contain a tot_correction matrix" % correct_file)
 
-    return data
+    data = f['tot_correction']
+
+    logger.info("Found ToT correction file that was created on %s" % data.attrs['creation_date'])
+
+    return True
+
+
+def read_tot_correction(correct_file):
+    if correct_file == "0":
+        # No ToT correction requested. Return zero matrix
+        return np.zeros((1024, 256, 256, 4), dtype=np.int8)
+
+    f = h5py.File(correct_file, 'r')
+    data = f['tot_correction']
+
+    return data[()]
 
 
 def remove_cross_hits(hits):
@@ -212,12 +238,16 @@ def parse_data_packages(positions, file_name, settings):
     # Reopen file in new process
     f = open(file_name, "rb")
 
+    # Allocate space for storing hits
     n_hits = sum(pos[1] // 8 for pos in positions)
     hits = np.zeros(n_hits, dtype=dt_hit)
 
+    # Load ToT correction matrix
+    tot_correction = read_tot_correction(settings.hits_tot_correct_file)
+
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos):
+        for hit in parse_data_package(f, pos, tot_correction):
             # TODO: A data package which failed to parse will now leave an row with zeros in the hits.
             if hit is not None:
                 hits[i] = hit
@@ -232,8 +262,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos):
-    global correct_tot
+def parse_data_package(f, pos, tot_correction):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -257,8 +286,9 @@ def parse_data_package(f, pos):
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
-            ToT_correct = ToT + correct_tot[ToT][y][x][pos[2]]
-            #yield (pos[2], x, y, ToT, CToA, time)
+            # Apply ToT correction matrix. When no correction matrix is loaded a zero matrix is being used
+            ToT_correct = ToT + tot_correction[ToT][y][x][pos[2]]
+
             yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
