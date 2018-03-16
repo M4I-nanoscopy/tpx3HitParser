@@ -67,6 +67,10 @@ class io:
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
         self.write['hits'].attrs['shape'] = 512 + 2 * lib.config.settings.hits_cross_extra_offset
+
+        if lib.config.settings.hits_tot_correct_file != "0":
+            self.write['hits'].attrs['tot_correction_file'] = lib.config.settings.hits_tot_correct_file
+
         self.write['control'] = control_events
         self.write_base_attributes('control')
         self.write['control'].attrs['input_file_name'] = file_name
