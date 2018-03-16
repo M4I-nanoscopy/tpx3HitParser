@@ -41,6 +41,7 @@ def read_raw(file_name, cores):
     i = 0
     while True:
         b = f.read(8)
+        position = f.tell()
 
         if not b:
             # Reached EOF
@@ -63,14 +64,14 @@ def read_raw(file_name, cores):
         # If this is a size 1 package, this could be control event package
         control_event = False
         if size / 8 == 1:
-            control_event = parse_control_packet(f, f.tell())
+            control_event = parse_control_packet(f, position)
 
             if control_event:
                 control_events.append(control_event)
 
         # If it is a true pixel package, add it to the list to be parsed later
         if not control_event:
-            positions[i] = [f.tell(), size, chip_nr]
+            positions[i] = [position, size, chip_nr]
             i += 1
 
             # Chunk is ready to be processed, off load to sub process
@@ -86,7 +87,8 @@ def read_raw(file_name, cores):
         if 0 < lib.config.settings.max_hits < n_hits:
             break
 
-        f.seek(size, 1)
+        # Skip over the data packets and to the next header
+        f.seek(position + size, 0)
 
     logger.info("File %s contains %d hits in mode %d " % (file_name, n_hits, mode))
     progress_bar.total = n_hits
@@ -205,10 +207,9 @@ def combine_chips(hits, hits_cross_extra_offset):
 
 
 def parse_control_packet(f, pos):
-    # Read package and reverse position (is this a clean way?)
+    # Read 1 pixel packet
     f.seek(pos)
     b = f.read(8)
-    f.seek(pos)
 
     struct_fmt = "<Q"
     pkg = struct.unpack(struct_fmt, b)[0]
