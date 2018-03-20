@@ -170,9 +170,6 @@ def remove_cross_hits(hits):
     indeces = np.arange(len(hits))
     hits = np.delete(hits, indeces[ind], axis=0)
 
-    sum = int(np.sum(ind))
-    # logger.debug("Removed %d (%d percent) hits in chip border pixels" % (sum, float(sum) / float(len(hits)) * 100))
-
     return hits
 
 
