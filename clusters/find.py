@@ -199,7 +199,7 @@ def print_cluster_stats(cluster_info, cluster_stats):
     try:
         fig, ax = plt.subplots()
     except _tkinter.TclError as e:
-        logger.error('Could not display cluster_stats plot. Error message was: %s' % e.message)
+        logger.error('Could not display cluster_stats plot. Error message was: %s' % str(e))
         return
 
     # Make 2d hist

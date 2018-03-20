@@ -36,7 +36,7 @@ def main():
         try:
             io.open_write(settings.output, settings.overwrite, settings.amend)
         except lib.IOException as e:
-            logger.error(e.message)
+            logger.error(str(e))
             return 1
 
     # Hits
@@ -52,7 +52,7 @@ def main():
         try:
             hits = io.read_hits(settings.hits)
         except lib.IOException as e:
-            logger.error(e.message)
+            logger.error(str(e))
             return 1
 
         hits_input_file = settings.hits
@@ -73,7 +73,7 @@ def main():
         try:
             cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
         except lib.IOException as e:
-            logger.error(e.message)
+            logger.error(str(e))
             return 1
 
     if settings.store_clusters:

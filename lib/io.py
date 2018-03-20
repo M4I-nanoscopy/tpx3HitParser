@@ -29,7 +29,7 @@ class io:
         try:
             self.write = h5py.File(file_name, mode)
         except IOError as e:
-            raise IOException("Could not open file for writing: %s" % e.message)
+            raise IOException("Could not open file for writing: %s" % str(e))
 
     def close_write(self):
         self.write.close()
