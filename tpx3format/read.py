@@ -142,8 +142,8 @@ def check_tot_correction(correct_file):
 
 def read_tot_correction(correct_file):
     if correct_file == "0":
-        # No ToT correction requested. Return zero matrix
-        return np.zeros((1024, 256, 256, 4), dtype=np.int8)
+        # No ToT correction requested
+        return None
 
     f = h5py.File(correct_file, 'r')
     data = f['tot_correction']
@@ -279,16 +279,19 @@ def parse_data_package(f, pos, tot_correction):
             spix = (pixel & 0x001F800000000000) >> 45
             pix = (pixel & 0x0000700000000000) >> 44
 
-            x = int(dcol + pix / 4)
-            y = int(spix + (pix & 0x3))
+            x = dcol + pix / 4
+            y = spix + (pix & 0x3)
 
             ToA = (pixel >> (16 + 14)) & 0x3fff
-            ToT = int((pixel >> (16 + 4)) & 0x3ff)
+            ToT = (pixel >> (16 + 4)) & 0x3ff
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
-            # Apply ToT correction matrix. When no correction matrix is loaded a zero matrix is being used
-            ToT_correct = ToT + tot_correction.item((ToT, y, x, pos[2]))
+            # Apply ToT correction matrix, when requested
+            if tot_correction is not None:
+                ToT_correct = int(ToT) + tot_correction.item((int(ToT), int(y), int(x), pos[2]))
+            else:
+                ToT_correct = ToT
 
             yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
