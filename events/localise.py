@@ -43,7 +43,7 @@ def centroid(cluster_matrix, cluster_info, events):
     # First split clusters in chunks
     chunk_size = lib.config.settings.event_chunk_size
     if chunk_size > len(cluster_info):
-        logger.warn("Cluster chunk size is larger than amount of events")
+        logger.warning("Cluster chunk size is larger than amount of events")
         chunk_size = len(cluster_info)
 
     # TODO: Are the same size groups created here?!?
@@ -79,7 +79,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
         try:
             x, y = ndimage.measurements.center_of_mass(cluster[0])
         except FloatingPointError:
-            logger.warn("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
+            logger.warning("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
             x, y = 0, 0
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']

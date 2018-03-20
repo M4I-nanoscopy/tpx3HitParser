@@ -57,7 +57,7 @@ def read_raw(file_name, cores):
 
         # Check for mode
         if mode != 0:
-            logger.warn("Found data packet with mode %d. Code has been developed for mode 0." % mode)
+            logger.warning("Found data packet with mode %d. Code has been developed for mode 0." % mode)
 
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 

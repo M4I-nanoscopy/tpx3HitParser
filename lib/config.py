@@ -51,7 +51,7 @@ def parse_config(argv=None):
         defaults['hits_remove_cross'] = config_parser.getboolean('Defaults', 'hits_remove_cross')
         defaults['hits_combine_chips'] = config_parser.getboolean('Defaults', 'hits_combine_chips')
     else:
-        logger.warn("No config file being used for setting constant defaults")
+        logger.warning("No config file being used for setting constant defaults")
 
     # Parse rest of arguments
     # Don't suppress add_help here so it will handle -h

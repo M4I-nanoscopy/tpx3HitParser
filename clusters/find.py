@@ -22,7 +22,7 @@ def find_clusters(hits):
 
     # First split hits in chunks defined by cluster_chunk_size
     if lib.config.settings.cluster_chunk_size > len(hits):
-        logger.warn("Cluster chunk size is larger than amount of hits")
+        logger.warning("Cluster chunk size is larger than amount of hits")
         lib.config.settings.cluster_chunk_size = len(hits)
 
     groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
@@ -118,7 +118,7 @@ def find_cluster_matches(settings, hits):
                 cluster_info.append(ci)
                 cluster_matrix.append(cm)
             except ClusterSizeExceeded:
-                logger.warn("Cluster exceeded max cluster size "
+                logger.warning("Cluster exceeded max cluster size "
                             "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
                 pass
 
