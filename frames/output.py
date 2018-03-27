@@ -14,13 +14,12 @@ def spidr_time_stats(events):
     print("SPIDR time min: %d" % spidr.min())
     print("SPIDR time max: %d" % spidr.max())
 
-    # print "Indices where SPIDR time jumps: "
-    # diff = np.where(abs(np.diff(spidr)) > 1000000)
-    # print diff
+    if spidr.max() > 65535 - 100:
+        ticks = 65535 - int(spidr[0]) + int(spidr[-1])
+    else:
+        ticks = int(spidr[-1]) - int(spidr[0])
 
-    print("Seconds exposure time (guess):")
-    # print (spidr[-1] - spidr[0]) * tick + len(diff) * 26.843
-    print(float(spidr[-1] - spidr[0]) * tick)
+    print("Seconds exposure time (estimate): %.5f" % (ticks * tick))
 
     plot_timers(events)
 
