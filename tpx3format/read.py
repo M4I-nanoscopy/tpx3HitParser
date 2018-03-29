@@ -246,10 +246,12 @@ def parse_data_packages(positions, file_name, settings):
     i = 0
     for pos in positions:
         for hit in parse_data_package(f, pos, tot_correction):
-            # TODO: A data package which failed to parse will now leave an row with zeros in the hits.
             if hit is not None:
                 hits[i] = hit
                 i += 1
+
+    # There may have been hits that were not parsed (failed package), resize those empty rows away.
+    hits.resize(i)
 
     if settings.hits_remove_cross:
         hits = remove_cross_hits(hits)
