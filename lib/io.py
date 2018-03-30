@@ -106,7 +106,7 @@ class io:
 
     def read_h5(self, file_name):
         if not os.path.exists(file_name):
-            raise IOException("File %s for reading does not exist")
+            raise IOException("File %s for reading does not exist" % file_name)
 
         return h5py.File(file_name, 'r')
 
