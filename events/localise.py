@@ -2,6 +2,8 @@ import logging
 import multiprocessing
 import time
 from scipy import ndimage
+
+import tpx3format
 from lib.constants import *
 import numpy as np
 import os
@@ -131,12 +133,22 @@ def cnn(cluster_matrix, cluster_info, events):
     # Run CNN prediction
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
+    shape = tpx3format.calculate_image_shape()
+
     # TODO: use predict_on_batch and roll our own batches. This allows us to, while processing to
     # already fill the event matrix
     for idx, p in enumerate(predictions):
+        x = cluster_info[idx]['x'] + p[0]
+        y = cluster_info[idx]['y'] + p[1]
+
+        # TODO: This slows down stuff, and makes the above batch TODO more important
+        if x > shape or y > shape:
+            logger.warning('Event found outside image matrix shape (%d) at position %.3f,%.3f. Removing it.' % (shape, x, y))
+            continue
+
         events[idx]['chipId'] = cluster_info[idx]['chipId']
-        events[idx]['x'] = cluster_info[idx]['x'] + p[0]
-        events[idx]['y'] = cluster_info[idx]['y'] + p[1]
+        events[idx]['x'] = x
+        events[idx]['y'] = y
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
 

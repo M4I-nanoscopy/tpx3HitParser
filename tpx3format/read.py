@@ -173,6 +173,10 @@ def remove_cross_hits(hits):
     return hits
 
 
+def calculate_image_shape():
+    return 512 + 2 * lib.config.settings.hits_cross_extra_offset
+
+
 def combine_chips(hits, hits_cross_extra_offset):
     # Chip are orientated like this
     # 2 1
