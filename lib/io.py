@@ -23,7 +23,7 @@ class io:
 
         if amend:
             mode = 'a'
-            self.amend =True
+            self.amend = True
         else:
             mode = 'w'
 
@@ -54,6 +54,19 @@ class io:
         d.attrs['revision'] = self.git_version()
         d.attrs['date'] = datetime.datetime.now().isoformat()
         d.attrs['version'] = constants.VERSION
+
+    def write_hit_chunk(self, hits):
+        if not 'hits' in self.write:
+            self.write.create_dataset('hits', shape=(1000000,), dtype=constants.dt_hit, maxshape=(None,), chunks=(1000000,), data=hits)
+        else:
+            hits_f = self.write['hits']
+
+            old = len(hits_f)
+            hits_f.resize(len(hits_f) + len(hits), 0)
+
+            hits_f[old:] = hits
+
+        self.write.flush()
 
     def store_hits(self, hits, control_events, file_name):
 

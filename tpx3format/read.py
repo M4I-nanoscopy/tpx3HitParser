@@ -99,29 +99,46 @@ def read_raw(file_name, cores):
                                     callback=pb_update)
     pool.close()
 
-    hits = np.empty(n_hits, dtype=dt_hit)
-
+    hits = np.empty(1000000, dtype=dt_hit)
     offset = 0
     for idx in range(0, len(results)):
         hits_chunk = results[idx].get(timeout=100)
 
-        hits[offset:offset + len(hits_chunk)] = hits_chunk
-        offset += len(hits_chunk)
+        # Fill up hits until max size, then yield
+        if offset + len(hits_chunk) < len(hits):
+            hits[offset:offset + len(hits_chunk)] = hits_chunk
+            offset += len(hits_chunk)
+        else:
+            # How much more fit before yielding
+            fit = len(hits) - offset
 
-        # Do not keep previous results object, reduces memory
+            # Store to fill up, and yield
+            hits[offset:offset + fit] = hits_chunk[0:fit]
+            yield hits
+
+            # Reset
+            hits = np.empty(1000000, dtype=dt_hit)
+            offset = 0
+
+            # Fill new chunk with remainder
+            hits[0:len(hits_chunk) - fit] = hits_chunk[fit:]
+            offset += len(hits_chunk) - fit
+
+        # This reduces memory usage, by signaling the GC that this process is done
         del results[idx]
+
 
     progress_bar.close()
 
-    if lib.config.settings.hits_remove_cross:
-        # TODO: This is an indirect way of calculating this!
-        diff = len(hits) - offset
-        logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
-
-    # Resize hits, because some hits were removed
+    # Resize remainder of hits to exact size and yield
     hits.resize(offset)
+    yield hits
 
-    return hits, control_events
+    # if lib.config.settings.hits_remove_cross:
+    #     # TODO: This is an indirect way of calculating this!
+    #     diff = len(hits) - offset
+    #     logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(len(hits)) * 100))
+    #
 
 
 def check_tot_correction(correct_file):

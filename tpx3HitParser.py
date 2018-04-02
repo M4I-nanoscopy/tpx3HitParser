@@ -40,13 +40,17 @@ def main():
             return 1
 
     # Hits
-    hits = []
     control_events = []
     hits_input_file = ""
 
     if settings.raw:
-        hits, control_events = tpx3format.read_raw(settings.raw, settings.cores)
         hits_input_file = settings.raw
+
+        # Yielding 1M hits for temp storage
+        for hits in tpx3format.read_raw(settings.raw, settings.cores):
+            io.write_hit_chunk(hits)
+
+    exit(0)
 
     if settings.hits:
         try:
