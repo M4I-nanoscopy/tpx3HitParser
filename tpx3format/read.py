@@ -35,10 +35,11 @@ def read_raw(file_name, cores):
         progress_bar.update(len(res))
 
     control_events = []
-    results = []
+    results = {}
     n_hits = 0
     mode = 0
     i = 0
+    r = 0
     while True:
         b = f.read(8)
         position = f.tell()
@@ -76,9 +77,9 @@ def read_raw(file_name, cores):
 
             # Chunk is ready to be processed, off load to sub process
             if i == max_positions:
-                results.append(
-                    pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings],
-                                     callback=pb_update))
+                results[r] = pool.apply_async(parse_data_packages, args=[np.copy(positions), file_name, lib.config.settings],
+                                     callback=pb_update)
+                r += 1
                 i = 0
 
             n_hits += size // 8
@@ -94,18 +95,21 @@ def read_raw(file_name, cores):
     progress_bar.total = n_hits
 
     # Parse remaining bit of packages
-    results.append(pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings],
-                                    callback=pb_update))
+    results[r] = pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings],
+                                    callback=pb_update)
     pool.close()
 
     hits = np.empty(n_hits, dtype=dt_hit)
 
     offset = 0
-    for r in results:
-        hits_chunk = r.get(timeout=100)
+    for idx in range(0, len(results)):
+        hits_chunk = results[idx].get(timeout=100)
 
         hits[offset:offset + len(hits_chunk)] = hits_chunk
         offset += len(hits_chunk)
+
+        # Do not keep previous results object, reduces memory
+        del results[idx]
 
     progress_bar.close()
 

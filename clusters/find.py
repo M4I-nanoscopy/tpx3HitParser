@@ -17,7 +17,7 @@ def find_clusters(hits):
     logger.info("Started finding clusters")
 
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=100)
-    results = list()
+    results = {}
     begin = time.time()
 
     # First split hits in chunks defined by cluster_chunk_size
@@ -27,11 +27,13 @@ def find_clusters(hits):
 
     groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
 
+    r = 0
     for group in groups:
         # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over
         # the process bus. This could be improved maybe with better shared mem usage
         # The `lib.config.settings` is passed here as Windows will not pass it as global var
-        results.append(pool.apply_async(find_cluster_matches, args=([lib.config.settings, group])))
+        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, group]))
+        r += 1
 
     pool.close()
 
@@ -41,13 +43,16 @@ def find_clusters(hits):
 
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
 
-    for r in results:
-        ci, cm, s = r.get(timeout=1000)
+    for idx in range(0, len(results)):
+        ci, cm, s = results[idx].get(timeout=1000)
         progress_bar.update(len(groups[0]))
 
         cluster_info.extend(ci)
         cluster_matrix.extend(cm)
         cluster_stats.extend(s)
+
+        # Do not keep previous results object, reduces memory
+        del results[idx]
 
     time_taken = time.time() - begin
 
@@ -227,4 +232,7 @@ def print_cluster_stats(cluster_info, cluster_stats):
     plt.ylabel('Cluster Size')
     plt.xlabel('Cluster ToT sum')
     plt.colorbar()
+
+    #plt.hist(cluster_stats[:, 1], range=(0, 700), bins=699)
+
     plt.show()
