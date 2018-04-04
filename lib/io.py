@@ -57,7 +57,13 @@ class io:
 
     def write_hit_chunk(self, hits):
         if not 'hits' in self.write:
-            self.write.create_dataset('hits', shape=(1000000,), dtype=constants.dt_hit, maxshape=(None,), chunks=(1000000,), data=hits)
+            if len(hits) < constants.HITS_CHUNK_SIZE:
+                # It's possible we're parsing less than chunk size hits
+                shape = (len(hits),)
+            else:
+                shape = (constants.HITS_CHUNK_SIZE, )
+
+            self.write.create_dataset('hits', shape=shape, dtype=constants.dt_hit, maxshape=(None,), chunks=shape, data=hits)
         else:
             hits_f = self.write['hits']
 

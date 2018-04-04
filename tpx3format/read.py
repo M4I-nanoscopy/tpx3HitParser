@@ -4,6 +4,8 @@ import struct
 
 import h5py
 import numpy as np
+
+from lib import constants
 from lib.constants import *
 import lib
 from tqdm import tqdm
@@ -99,7 +101,7 @@ def read_raw(file_name, cores):
                                     callback=pb_update)
     pool.close()
 
-    hits = np.empty(1000000, dtype=dt_hit)
+    hits = np.empty(constants.HITS_CHUNK_SIZE, dtype=dt_hit)
     offset = 0
     parsed_hits = 0
     for idx in range(0, len(results)):
@@ -119,7 +121,7 @@ def read_raw(file_name, cores):
             yield hits, control_events
 
             # Reset
-            hits = np.empty(1000000, dtype=dt_hit)
+            hits = np.empty(constants.HITS_CHUNK_SIZE, dtype=dt_hit)
             offset = 0
 
             # Fill new chunk with remainder

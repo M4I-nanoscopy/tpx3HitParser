@@ -11,6 +11,7 @@ dt_hit = numpy.dtype([
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
 ])
+HITS_CHUNK_SIZE = 1000000
 
 # Cluster info key indeces
 dt_ci = numpy.dtype([
