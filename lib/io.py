@@ -68,7 +68,7 @@ class io:
 
         self.write.flush()
 
-    def store_hits(self, hits, control_events, file_name):
+    def store_hits(self, control_events, file_name):
 
         if self.amend and 'hits' in self.write:
             logger.warning('Overwriting existing /hits dataset')
@@ -77,7 +77,6 @@ class io:
             logger.warning('Overwriting existing /control dataset')
             del self.write['control']
 
-        self.write['hits'] = hits
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
         self.write['hits'].attrs['shape'] = tpx3format.calculate_image_shape()
@@ -88,6 +87,9 @@ class io:
         self.write['control'] = control_events
         self.write_base_attributes('control')
         self.write['control'].attrs['input_file_name'] = file_name
+
+    def del_hits(self):
+        del self.write['hits']
 
     def store_clusters(self, cluster_matrix, cluster_info):
 
@@ -129,7 +131,7 @@ class io:
         if not 'hits' in f:
             raise IOException("File %s does not have a /hits dataset" % file_name)
 
-        return f['hits'][()]
+        return f['hits']
 
     def read_clusters(self, file_name):
         f = self.read_h5(file_name)

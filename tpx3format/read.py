@@ -116,7 +116,7 @@ def read_raw(file_name, cores):
 
             # Store to fill up, and yield
             hits[offset:offset + fit] = hits_chunk[0:fit]
-            yield hits
+            yield hits, control_events
 
             # Reset
             hits = np.empty(1000000, dtype=dt_hit)
@@ -133,7 +133,7 @@ def read_raw(file_name, cores):
 
     # Resize remainder of hits to exact size and yield
     hits.resize(offset)
-    yield hits
+    yield hits, control_events
 
     if lib.config.settings.hits_remove_cross:
         # TODO: This is an indirect way of calculating this!

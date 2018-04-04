@@ -4,8 +4,11 @@ from matplotlib.ticker import EngFormatter
 
 
 # Display some stats about the SPIDR global time
-def spidr_time_stats(events):
-    spidr = events['TSPIDR']
+def spidr_time_stats(hits):
+    # Load all hits into memory
+    hits = hits[()]
+
+    spidr = hits['TSPIDR']
 
     tick = 26.843 / 65536.
 
@@ -21,19 +24,19 @@ def spidr_time_stats(events):
 
     print("Seconds exposure time (estimate): %.5f" % (ticks * tick))
 
-    plot_timers(events)
+    plot_timers(hits)
 
 
 # Plot SPIDR time of entire run
-def plot_timers(events):
+def plot_timers(hits):
     fig, ax = plt.subplots()
 
-    index = np.arange(len(events))
+    index = np.arange(len(hits))
 
     for chip in range(0, 4):
         # Index frame to only the particular chip
-        chip_events = events[[events['chipId'] == chip]]
-        chip_index = index[[events['chipId'] == chip]]
+        chip_events = hits[[hits['chipId'] == chip]]
+        chip_index = index[[hits['chipId'] == chip]]
 
         # Get only every 1000nth hit
         spidr = chip_events['TSPIDR'][1::1000]

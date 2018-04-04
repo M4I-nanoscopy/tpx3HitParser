@@ -32,42 +32,40 @@ def main():
     logger.debug(settings)
 
     # Output file
-    if settings.output:
-        try:
-            io.open_write(settings.output, settings.overwrite, settings.amend)
-        except lib.IOException as e:
-            logger.error(str(e))
-            return 1
+    try:
+        io.open_write(settings.output, settings.overwrite, settings.amend)
+    except lib.IOException as e:
+        logger.error(str(e))
+        return 1
 
-    # Hits
-    control_events = []
-    hits_input_file = ""
-
+    # Hits ###
     if settings.raw:
-        hits_input_file = settings.raw
+        control_events = []
 
-        # Yielding 1M hits for temp storage
-        for hits in tpx3format.read_raw(settings.raw, settings.cores):
-            io.write_hit_chunk(hits)
+        # TODO: Not pretty to return control_events in each iteration
+        for hits_chunk, control_events in tpx3format.read_raw(settings.raw, settings.cores):
+            io.write_hit_chunk(hits_chunk)
 
-    exit(0)
+        # Store hits, we may need to remove it later though if not requested to store
+        io.store_hits(control_events, settings.raw)
 
-    if settings.hits:
+        # Read hits from just written data set, not loaded in memory. But read chunk-wise upon request
+        hits = io.read_hits(settings.output)
+    elif settings.hits:
         try:
             hits = io.read_hits(settings.hits)
         except lib.IOException as e:
             logger.error(str(e))
             return 1
-
-        hits_input_file = settings.hits
-
-    if settings.store_hits:
-        io.store_hits(hits, control_events, hits_input_file)
+    else:
+        # This should not happen, as the config parser already catches this
+        logger.error("No method to read hits.")
+        return 1
 
     if settings.spidr_stats:
         frames.spidr_time_stats(hits)
 
-    # Clusters
+    # Clusters ###
     cluster_info = []
     cluster_matrix = []
     if settings.C:
@@ -83,15 +81,17 @@ def main():
     if settings.store_clusters:
         io.store_clusters(cluster_matrix, cluster_info)
 
-    # Events
+    # Events ###
     if settings.E:
         e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
 
         if settings.store_events:
             io.store_events(e, settings.algorithm, settings.event_cnn_model)
 
-    if settings.output:
-        io.close_write()
+    if not settings.store_hits:
+        io.del_hits()
+
+    io.close_write()
 
     return 0
 

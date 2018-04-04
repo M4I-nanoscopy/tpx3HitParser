@@ -76,7 +76,7 @@ def parse_config(argv=None):
 
     # Output file arguments
     output_group = parser.add_argument_group('output arguments')
-    output_group.add_argument("-o", "--output", metavar='FILE', help='Output HDF5 file')
+    output_group.add_argument("-o", "--output", required=True, metavar='FILE', help='Output HDF5 file')
     output_group.add_argument("--amend", action='store_true', help='Amend to existing HDF5 file')
     output_group.add_argument("--overwrite", action='store_true', help='Overwrite existing HDF5 file')
     output_group.add_argument("--store_hits", action='store_true', help="Store /hits in output file")
