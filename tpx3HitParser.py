@@ -94,10 +94,10 @@ def main():
         if settings.store_events:
             io.store_events(e, settings.algorithm, settings.event_cnn_model)
 
-    if not settings.store_hits:
+    if settings.raw and not settings.store_hits:
         io.del_hits()
 
-    if not settings.store_clusters:
+    if settings.C and not settings.store_clusters:
         io.del_clusters()
 
     io.close_write()
