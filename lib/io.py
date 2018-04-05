@@ -143,7 +143,7 @@ class io:
         if 'cluster_info' not in f:
             raise IOException("File %s does not have a /cluster_info dataset" % file_name)
 
-        return f['clusters'][()], f['cluster_info'][()]
+        return f['clusters'], f['cluster_info']
 
 
 class IOException(Exception):
