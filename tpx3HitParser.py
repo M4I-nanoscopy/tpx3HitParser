@@ -5,7 +5,8 @@ import sys
 # Get rid of a harmless h5py FutureWarning. Can be removed with a new release of h5py
 # https://github.com/h5py/h5py/issues/961
 import warnings
-warnings.filterwarnings('ignore', 'Conversion of the second argument of issubdtype from .*',)
+
+warnings.filterwarnings('ignore', 'Conversion of the second argument of issubdtype from .*', )
 
 import lib
 import frames
@@ -39,6 +40,7 @@ def main():
         return 1
 
     # Hits ###
+    hits = None
     if settings.raw:
         control_events = None
 
@@ -57,13 +59,8 @@ def main():
         except lib.IOException as e:
             logger.error(str(e))
             return 1
-    else:
-        # This should not happen, as the config parser already catches this
-        # TODO: Incorrect!
-        logger.error("No method to read hits.")
-        return 1
 
-    if settings.spidr_stats:
+    if settings.spidr_stats and hits is not None:
         frames.spidr_time_stats(hits)
 
     # Clusters ###

@@ -112,8 +112,11 @@ def parse_config(argv=None):
     global settings
     settings = parser.parse_args(remaining_argv)
 
-    if (settings.store_hits or settings.store_clusters or settings.store_events) and not settings.output:
-        parser.error('An output file (-o or --output) is required when specifying a store option')
+    if settings.C and not (settings.raw or settings.hits):
+        parser.error('Either --hits or --raw is required when parsing clusters (-C)')
+
+    if settings.spidr_stats and not (settings.raw or settings.hits):
+        parser.error('Either --hits or --raw is required when requesting --spidr_stats')
 
 
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
