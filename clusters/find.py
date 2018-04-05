@@ -37,19 +37,16 @@ def find_clusters(hits):
 
     pool.close()
 
-    cluster_info = list()
-    cluster_matrix = list()
-    cluster_stats = list()
-
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
 
+    clusters = 0
     for idx in range(0, len(results)):
         ci, cm, s = results[idx].get(timeout=1000)
         progress_bar.update(len(groups[0]))
 
-        cluster_info.extend(ci)
-        cluster_matrix.extend(cm)
-        cluster_stats.extend(s)
+        clusters += len(ci)
+
+        yield ci, cm, s
 
         # Do not keep previous results object, reduces memory
         del results[idx]
@@ -57,12 +54,7 @@ def find_clusters(hits):
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-        len(cluster_info), len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
-
-    if lib.config.settings.cluster_stats:
-        print_cluster_stats(np.array(cluster_info), np.array(cluster_stats))
-
-    return np.array(cluster_info), np.array(cluster_matrix)
+        clusters, len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
 
 
 def find_cluster_matches(settings, hits):
@@ -96,9 +88,11 @@ def find_cluster_matches(settings, hits):
     # Combine these condition into one match matrix
     matches = np.logical_and.reduce((match_c, match_x, match_y, match_t))
 
-    cluster_info = list()
-    cluster_matrix = list()
+    # We have to build the cluster matrices already here, and resize later
+    cluster_info = np.zeros(len(hits), dtype=dt_ci)
+    cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), 'uint8')
     cluster_stats = list()
+    c = 0
 
     # Loop over all columns of matches, and handle event/cluster per column
     for m in range(0, matches.shape[0]):
@@ -120,11 +114,12 @@ def find_cluster_matches(settings, hits):
         if clean_cluster(cluster, settings):
             try:
                 ci, cm = build_cluster(cluster, settings)
-                cluster_info.append(ci)
-                cluster_matrix.append(cm)
+                cluster_info[c] = ci
+                cluster_matrix[c] = cm
+                c += 1
             except ClusterSizeExceeded:
                 logger.warning("Cluster exceeded max cluster size "
-                            "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
+                               "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
                 pass
 
         # Build cluster stats if requested
@@ -134,6 +129,10 @@ def find_cluster_matches(settings, hits):
 
         # Make sure the events we used are not being used a second time
         matches[select] = False
+
+    # We made the cluster_info and cluster_matrix too big, resize to actual size
+    cluster_info = np.resize(cluster_info, c)
+    cluster_matrix = np.resize(cluster_matrix, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
 
     return cluster_info, cluster_matrix, cluster_stats
 
@@ -173,8 +172,7 @@ def build_cluster(c, settings):
     toa = c['cToA']
 
     try:
-        # TODO: We're throwing away the NaN information here of pixels that have not been hit, but this function is
-        # fast!
+        # TODO: We're throwing away NaN information here of pixels that have not been hit, but this function is fast!
         cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
         cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
@@ -195,6 +193,8 @@ class ClusterSizeExceeded(Exception):
 
 
 def print_cluster_stats(cluster_info, cluster_stats):
+    cluster_stats = np.array(cluster_stats)
+
     removed = len(cluster_stats) - len(cluster_info)
     removed_percentage = float(removed / float(len(cluster_info) + removed)) * 100
 
@@ -233,6 +233,6 @@ def print_cluster_stats(cluster_info, cluster_stats):
     plt.xlabel('Cluster ToT sum')
     plt.colorbar()
 
-    #plt.hist(cluster_stats[:, 1], range=(0, 700), bins=699)
+    # plt.hist(cluster_stats[:, 1], range=(0, 700), bins=699)
 
     plt.show()

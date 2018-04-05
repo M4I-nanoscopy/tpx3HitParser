@@ -21,6 +21,7 @@ dt_ci = numpy.dtype([
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
 ])
+CLUSTER_CHUNK_SIZE = 100000
 
 # Event matrix key indeces
 dt_event = numpy.dtype([

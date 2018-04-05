@@ -33,6 +33,7 @@ class io:
             raise IOException("Could not open file for writing: %s" % str(e))
 
     def close_write(self):
+        self.write.flush()
         self.write.close()
 
     @staticmethod
@@ -56,19 +57,20 @@ class io:
         d.attrs['version'] = constants.VERSION
 
     def write_hit_chunk(self, hits):
-        if not 'hits' in self.write:
+        if 'hits' not in self.write:
             if len(hits) < constants.HITS_CHUNK_SIZE:
                 # It's possible we're parsing less than chunk size hits
                 shape = (len(hits),)
             else:
-                shape = (constants.HITS_CHUNK_SIZE, )
+                shape = (constants.HITS_CHUNK_SIZE,)
 
-            self.write.create_dataset('hits', shape=shape, dtype=constants.dt_hit, maxshape=(None,), chunks=shape, data=hits)
+            self.write.create_dataset('hits', shape=shape, dtype=constants.dt_hit, maxshape=(None,), chunks=shape,
+                                      data=hits)
         else:
             hits_f = self.write['hits']
 
             old = len(hits_f)
-            hits_f.resize(len(hits_f) + len(hits), 0)
+            hits_f.resize(old + len(hits), 0)
 
             hits_f[old:] = hits
 
@@ -97,7 +99,25 @@ class io:
     def del_hits(self):
         del self.write['hits']
 
-    def store_clusters(self, cluster_matrix, cluster_info):
+    def write_cluster_chunk(self, ci, cm):
+        if not 'cluster_info' in self.write:
+            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
+                                      chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
+            self.write.create_dataset('clusters', shape=(len(cm), 2, 10, 10), dtype='uint8', maxshape=(None, 2, 10, 10),
+                                      chunks=(constants.CLUSTER_CHUNK_SIZE, 2, 10, 10), data=cm)
+        else:
+            ci_f = self.write['cluster_info']
+            cm_f = self.write['clusters']
+
+            old = len(ci_f)
+
+            ci_f.resize(old + len(ci), 0)
+            cm_f.resize(old + len(cm), 0)
+
+            ci_f[old:] = ci
+            cm_f[old:] = cm
+
+    def store_clusters(self):
 
         if self.amend and 'clusters' in self.write:
             logger.warning('Overwriting existing /clusters dataset')
@@ -106,10 +126,12 @@ class io:
             logger.warning('Overwriting existing /cluster_info dataset')
             del self.write['cluster_info']
 
-        self.write['clusters'] = cluster_matrix
         self.write_base_attributes('clusters')
-        self.write['cluster_info'] = cluster_info
         self.write_base_attributes('cluster_info')
+
+    def del_clusters(self):
+        del self.write['cluster_info']
+        del self.write['clusters']
 
     def store_events(self, events, algorithm, cnn_model):
 
@@ -134,7 +156,7 @@ class io:
     def read_hits(self, file_name):
         f = self.read_h5(file_name)
 
-        if not 'hits' in f:
+        if 'hits' not in f:
             raise IOException("File %s does not have a /hits dataset" % file_name)
 
         return f['hits']
@@ -142,10 +164,10 @@ class io:
     def read_clusters(self, file_name):
         f = self.read_h5(file_name)
 
-        if not 'clusters' in f:
+        if 'clusters' not in f:
             raise IOException("File %s does not have a /clusters dataset" % file_name)
 
-        if not 'cluster_info' in f:
+        if 'cluster_info' not in f:
             raise IOException("File %s does not have a /cluster_info dataset" % file_name)
 
         return f['clusters'][()], f['cluster_info'][()]

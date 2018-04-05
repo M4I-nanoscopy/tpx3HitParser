@@ -40,7 +40,7 @@ def main():
 
     # Hits ###
     if settings.raw:
-        control_events = []
+        control_events = None
 
         # TODO: Not pretty to return control_events in each iteration
         for hits_chunk, control_events in tpx3format.read_raw(settings.raw, settings.cores):
@@ -59,6 +59,7 @@ def main():
             return 1
     else:
         # This should not happen, as the config parser already catches this
+        # TODO: Incorrect!
         logger.error("No method to read hits.")
         return 1
 
@@ -66,20 +67,28 @@ def main():
         frames.spidr_time_stats(hits)
 
     # Clusters ###
-    cluster_info = []
-    cluster_matrix = []
+    cluster_info = None
+    cluster_matrix = None
+    cluster_stats = []
     if settings.C:
-        cluster_info, cluster_matrix = clusters.find_clusters(hits)
+        for ci_chunk, cm_chunk, stats_chunk in clusters.find_clusters(hits):
+            io.write_cluster_chunk(ci_chunk, cm_chunk)
+            cluster_stats.extend(stats_chunk)
 
-    if settings.clusters:
+        # Store clusters, we may delete it later
+        io.store_clusters()
+
+        # Read clusters from just written data, not loaded in memory
+        cluster_matrix, cluster_info = io.read_clusters(settings.output)
+
+        if settings.cluster_stats:
+            clusters.print_cluster_stats(cluster_info, cluster_stats)
+    elif settings.clusters:
         try:
             cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
         except lib.IOException as e:
             logger.error(str(e))
             return 1
-
-    if settings.store_clusters:
-        io.store_clusters(cluster_matrix, cluster_info)
 
     # Events ###
     if settings.E:
@@ -90,6 +99,9 @@ def main():
 
     if not settings.store_hits:
         io.del_hits()
+
+    if not settings.store_clusters:
+        io.del_clusters()
 
     io.close_write()
 
