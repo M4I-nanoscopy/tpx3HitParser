@@ -33,7 +33,7 @@ def main():
 
     # Output file
     try:
-        io.open_write(settings.output, settings.overwrite, settings.amend)
+        io.open_write(settings.output, settings.overwrite)
     except lib.IOException as e:
         logger.error(str(e))
         return 1

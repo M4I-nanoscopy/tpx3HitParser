@@ -12,23 +12,16 @@ logger = logging.getLogger('root')
 
 class io:
     write = None
-    amend = False
 
     def __init__(self):
         pass
 
-    def open_write(self, file_name, overwrite, amend):
-        if os.path.exists(file_name) and not (overwrite or amend):
-            raise IOException("Output file already exists and --overwrite or --amend not specified.")
-
-        if amend:
-            mode = 'a'
-            self.amend = True
-        else:
-            mode = 'w'
+    def open_write(self, file_name, overwrite):
+        if os.path.exists(file_name) and not overwrite:
+            raise IOException("Output file already exists and --overwrite not specified.")
 
         try:
-            self.write = h5py.File(file_name, mode)
+            self.write = h5py.File(file_name, 'w')
         except IOError as e:
             raise IOException("Could not open file for writing: %s" % str(e))
 
@@ -77,14 +70,6 @@ class io:
         self.write.flush()
 
     def store_hits(self, control_events, file_name):
-
-        if self.amend and 'hits' in self.write:
-            logger.warning('Overwriting existing /hits dataset')
-            del self.write['hits']
-        if self.amend and 'control' in self.write:
-            logger.warning('Overwriting existing /control dataset')
-            del self.write['control']
-
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
         self.write['hits'].attrs['shape'] = tpx3format.calculate_image_shape()
@@ -118,14 +103,6 @@ class io:
             cm_f[old:] = cm
 
     def store_clusters(self):
-
-        if self.amend and 'clusters' in self.write:
-            logger.warning('Overwriting existing /clusters dataset')
-            del self.write['clusters']
-        if self.amend and 'cluster_info' in self.write:
-            logger.warning('Overwriting existing /cluster_info dataset')
-            del self.write['cluster_info']
-
         self.write_base_attributes('clusters')
         self.write_base_attributes('cluster_info')
 
@@ -134,11 +111,6 @@ class io:
         del self.write['clusters']
 
     def store_events(self, events, algorithm, cnn_model):
-
-        if self.amend and 'events' in self.write:
-            logger.warning('Overwriting existing /events dataset')
-            del self.write['events']
-
         self.write['events'] = events
         self.write_base_attributes('events')
         self.write['events'].attrs['algorithm'] = algorithm
