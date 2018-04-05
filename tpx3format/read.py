@@ -134,7 +134,7 @@ def read_raw(file_name, cores):
     progress_bar.close()
 
     # Resize remainder of hits to exact size and yield
-    hits.resize(offset)
+    hits = np.resize(hits, offset)
     yield hits, control_events
 
     if lib.config.settings.hits_remove_cross:
