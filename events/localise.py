@@ -37,7 +37,7 @@ def localise_events(cluster_matrix, cluster_info, method):
 def centroid(cluster_matrix, cluster_info, events):
     # Setup pool
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=100)
-    results = list()
+    results = {}
 
     # Progress bar
     progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
@@ -48,22 +48,33 @@ def centroid(cluster_matrix, cluster_info, events):
         logger.warning("Cluster chunk size is larger than amount of events")
         chunk_size = len(cluster_info)
 
-    # TODO: Are the same size groups created here?!?
-    cm_groups = np.array_split(cluster_matrix, len(cluster_matrix) / chunk_size)
-    ci_groups = np.array_split(cluster_info, len(cluster_info) / chunk_size)
+    start = 0
+    r = 0
+    while start < len(cluster_info):
+        end = start + chunk_size
 
-    for idx, cm_group in enumerate(cm_groups):
-        results.append(pool.apply_async(calculate_centroid, args=([cm_group, ci_groups[idx]])))
+        if end > len(cluster_info):
+            end = len(cluster_info)
+
+        # This reads the clusters chunk wise.
+        cm_chunk = cluster_matrix[start:end]
+        ci_chunk = cluster_info[start:end]
+
+        results[r] = pool.apply_async(calculate_centroid, args=([cm_chunk, ci_chunk]))
+        start = end
+        r += 1
 
     pool.close()
 
     offset = 0
-    for r in results:
-        events_chunk = r.get(timeout=100)
+    for idx in range(0, len(results)):
+        events_chunk = results[idx].get(timeout=100)
         progress_bar.update(len(events_chunk))
 
         events[offset:offset + len(events_chunk)] = events_chunk
         offset += len(events_chunk)
+
+        del results[idx]
 
     progress_bar.close()
 
