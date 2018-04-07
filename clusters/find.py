@@ -25,14 +25,18 @@ def find_clusters(hits):
         logger.warning("Cluster chunk size is larger than amount of hits")
         lib.config.settings.cluster_chunk_size = len(hits)
 
-    groups = np.array_split(hits, len(hits) / lib.config.settings.cluster_chunk_size)
-
     r = 0
-    for group in groups:
-        # TODO: By passing the the chunk of hits (group) as argument, a large amount of pickle data is passed over
-        # the process bus. This could be improved maybe with better shared mem usage
+    start = 0
+    while start < len(hits):
+        end = start + lib.config.settings.cluster_chunk_size
+
+        if end > len(hits):
+            end = len(hits)
+
         # The `lib.config.settings` is passed here as Windows will not pass it as global var
-        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, group]))
+        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, lib.config.settings.output, start, end]))
+
+        start = end
         r += 1
 
     pool.close()
@@ -42,7 +46,7 @@ def find_clusters(hits):
     clusters = 0
     for idx in range(0, len(results)):
         ci, cm, s = results[idx].get(timeout=1000)
-        progress_bar.update(len(groups[0]))
+        progress_bar.update(lib.config.settings.cluster_chunk_size)
 
         clusters += len(ci)
 
@@ -57,7 +61,12 @@ def find_clusters(hits):
         clusters, len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
 
 
-def find_cluster_matches(settings, hits):
+def find_cluster_matches(settings, hits_f, start, end):
+    # Read chunk of hits
+    io = lib.io()
+    hits_d = io.read_hits(hits_f)
+    hits = hits_d[start:end]
+
     # TODO: Move this var to configuration options
     time_size = 50
 
