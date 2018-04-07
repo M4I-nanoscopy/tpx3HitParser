@@ -33,8 +33,11 @@ def find_clusters(hits):
         if end > len(hits):
             end = len(hits)
 
+        # Reads hits chunk wise
+        hits_chunk = hits[start:end]
+
         # The `lib.config.settings` is passed here as Windows will not pass it as global var
-        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, lib.config.settings.output, start, end]))
+        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, hits_chunk]))
 
         start = end
         r += 1
@@ -61,12 +64,7 @@ def find_clusters(hits):
         clusters, len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
 
 
-def find_cluster_matches(settings, hits_f, start, end):
-    # Read chunk of hits
-    io = lib.io()
-    hits_d = io.read_hits(hits_f)
-    hits = hits_d[start:end]
-
+def find_cluster_matches(settings, hits):
     # TODO: Move this var to configuration options
     time_size = 50
 

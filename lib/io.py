@@ -85,7 +85,7 @@ class io:
         del self.write['hits']
 
     def write_cluster_chunk(self, ci, cm):
-        if not 'cluster_info' in self.write:
+        if 'cluster_info' not in self.write:
             cms = lib.config.settings.cluster_matrix_size
             self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
