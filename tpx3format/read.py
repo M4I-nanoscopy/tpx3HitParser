@@ -27,7 +27,7 @@ def read_raw(file_name, cores):
     check_tot_correction(lib.config.settings.hits_tot_correct_file)
 
     # Allocate processing processes
-    pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=100)
+    pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=1000)
 
     # Make progress bar to keep track of hits being read
     logger.info("Reading file %s, estimating %d hits" % (file_name, estimate))

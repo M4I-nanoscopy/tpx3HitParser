@@ -36,7 +36,7 @@ def localise_events(cluster_matrix, cluster_info, method):
 
 def centroid(cluster_matrix, cluster_info, events):
     # Setup pool
-    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=100)
+    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
     results = {}
 
     # Progress bar
