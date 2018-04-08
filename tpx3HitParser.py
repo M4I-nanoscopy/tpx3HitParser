@@ -89,6 +89,7 @@ def main():
 
     # Events ###
     if settings.E:
+        # TODO: This writes all events at once, and may cause memory issues
         e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
 
         if settings.store_events:

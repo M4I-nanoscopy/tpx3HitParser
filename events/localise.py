@@ -148,6 +148,7 @@ def cnn(cluster_matrix, cluster_info, events):
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
     # Copy all events from cluster_info as base
+    # TODO: This loads whole cluster_info matrix at once and may cause memory issues
     events = cluster_info[()].astype(dt_event)
 
     # Add prediction offset from cluster origin
