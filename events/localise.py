@@ -22,9 +22,9 @@ def localise_events(cluster_matrix, cluster_info, method):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     if method == "centroid":
-        centroid(cluster_matrix, cluster_info, events)
+        events = centroid(cluster_matrix, cluster_info, events)
     elif method == "cnn":
-        cnn(cluster_matrix, cluster_info, events)
+        events = cnn(cluster_matrix, cluster_info, events)
 
     time_taken = time.time() - begin
 
@@ -147,23 +147,22 @@ def cnn(cluster_matrix, cluster_info, events):
     # Run CNN prediction
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
+    # Copy all events from cluster_info as base
+    events = cluster_info[()].astype(dt_event)
+
+    # Add prediction offset from cluster origin
+    events['x'] = events['x'] + predictions[:, 0]
+    events['y'] = events['y'] + predictions[:, 1]
+
     shape = tpx3format.calculate_image_shape()
 
-    # TODO: use predict_on_batch and roll our own batches. This allows us to, while processing to
-    # already fill the event matrix
-    for idx, p in enumerate(predictions):
-        x = cluster_info[idx]['x'] + p[0]
-        y = cluster_info[idx]['y'] + p[1]
+    # Check for events outside matrix shape, and delete those
+    ind_del = (events['x'] > shape) | (events['y'] > shape)
+    indeces = np.arange(len(events))
+    events = np.delete(events, indeces[ind_del], axis=0)
+    deleted = np.count_nonzero(ind_del)
 
-        # TODO: This slows down stuff, and makes the above batch TODO more important
-        if x > shape or y > shape:
-            logger.warning('Event found outside image matrix shape (%d) at position %.3f,%.3f. Removing it.' % (shape, x, y))
-            continue
-
-        events[idx]['chipId'] = cluster_info[idx]['chipId']
-        events[idx]['x'] = x
-        events[idx]['y'] = y
-        events[idx]['cToA'] = cluster_info[idx]['cToA']
-        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+    if deleted > 0:
+        logger.warning('Removed %d events found outside image matrix shape (%d).' % (deleted, shape))
 
     return events
