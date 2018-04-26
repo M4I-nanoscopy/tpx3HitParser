@@ -89,7 +89,7 @@ class io:
             cms = lib.config.settings.cluster_matrix_size
             self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
-            self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype='uint8', maxshape=(None, 2, cms, cms),
+            self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype=constants.dt_clusters, maxshape=(None, 2, cms, cms),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE, 2, cms, cms), data=cm)
         else:
             ci_f = self.write['cluster_info']

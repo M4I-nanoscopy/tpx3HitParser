@@ -160,7 +160,7 @@ def clean_cluster(c, settings):
 def build_cluster(c, settings):
     m_size = settings.cluster_matrix_size
     ci = np.zeros(1, dtype=dt_ci)
-    cluster = np.zeros((2, m_size, m_size), 'uint8')
+    cluster = np.zeros((2, m_size, m_size), dt_clusters)
 
     # Base cTOA value
     min_ctoa = min(c['cToA'])
