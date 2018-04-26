@@ -97,7 +97,7 @@ def find_cluster_matches(settings, hits):
 
     # We have to build the cluster matrices already here, and resize later
     cluster_info = np.zeros(len(hits), dtype=dt_ci)
-    cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), 'uint8')
+    cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
     cluster_stats = list()
     c = 0
 
@@ -184,6 +184,9 @@ def build_cluster(c, settings):
         cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
         raise ClusterSizeExceeded
+
+    if np.sum(cluster[0, :, :]) < 200:
+        print "error"
 
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
