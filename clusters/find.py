@@ -185,9 +185,6 @@ def build_cluster(c, settings):
     except ValueError:
         raise ClusterSizeExceeded
 
-    if np.sum(cluster[0, :, :]) < 200:
-        print "error"
-
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
     ci['x'] = min_x
