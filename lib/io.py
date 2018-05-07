@@ -103,9 +103,19 @@ class io:
             ci_f[old:] = ci
             cm_f[old:] = cm
 
-    def store_clusters(self):
+    def store_clusters(self, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
         self.write_base_attributes('clusters')
         self.write_base_attributes('cluster_info')
+
+        # Store cluster_stats
+        self.write.create_dataset('cluster_stats', shape=(len(cluster_stats),2), dtype='uint16', data=cluster_stats)
+
+        self.write['cluster_stats'].attrs.update({
+            'cluster_min_sum_tot': cluster_min_sum_tot,
+            'cluster_max_sum_tot': cluster_max_sum_tot,
+            'cluster_min_size': cluster_min_size,
+            'cluster_max_size': cluster_max_size
+        })
 
     def del_clusters(self):
         del self.write['cluster_info']

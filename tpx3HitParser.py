@@ -72,14 +72,12 @@ def main():
             io.write_cluster_chunk(ci_chunk, cm_chunk)
             cluster_stats.extend(stats_chunk)
 
-        # Store clusters, we may delete it later
-        io.store_clusters()
+        # Store clusters and cluster stats, we may delete it later
+        io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
+                          settings.cluster_max_size, settings.cluster_min_size)
 
         # Read clusters from just written data, not loaded in memory
         cluster_matrix, cluster_info = io.read_clusters(settings.output)
-
-        if settings.cluster_stats:
-            clusters.print_cluster_stats(cluster_info, cluster_stats)
     elif settings.clusters:
         try:
             cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
