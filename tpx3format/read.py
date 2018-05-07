@@ -20,7 +20,7 @@ def read_raw(file_name, cores):
     estimate = os.fstat(f.fileno()).st_size / 8
 
     # Allocate an array to hold positions of packages. Using int64 to support files over 4.2 GB
-    max_positions = 100
+    max_positions = 500
     positions = np.empty((max_positions, 3), dtype='int64')
 
     # Check if we have a loadable ToT correction file
