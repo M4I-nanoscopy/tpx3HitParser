@@ -286,6 +286,9 @@ def parse_data_packages(positions, file_name, settings):
     if settings.hits_combine_chips:
         combine_chips(hits, settings.hits_cross_extra_offset)
 
+    # TODO: Implement sorting
+    # hits = np.sort(hits, 0, 'heapsort', 'TSPIDR')
+
     return hits
 
 
@@ -316,6 +319,10 @@ def parse_data_package(f, pos, tot_correction):
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
                 ToT_correct = int(ToT) + tot_correction.item((int(ToT), int(y), int(x), pos[2]))
+
+                # TODO: Remove this fix once ToT correction table cannot have this anymore
+                if ToT_correct < 0:
+                    ToT_correct = 0
             else:
                 ToT_correct = ToT
 
