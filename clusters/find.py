@@ -36,8 +36,8 @@ def find_clusters(hits):
     while start < max_hits:
         end = start + lib.config.settings.cluster_chunk_size
 
-        if end > len(hits):
-            end = len(hits)
+        if end > max_hits:
+            end = max_hits
 
         # Reads hits chunk wise
         hits_chunk = hits[start:end]
@@ -50,7 +50,7 @@ def find_clusters(hits):
 
     pool.close()
 
-    progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
+    progress_bar = tqdm(total=max_hits, unit="hits", smoothing=0.1, unit_scale=True)
 
     clusters = 0
     for idx in range(0, len(results)):
@@ -67,7 +67,7 @@ def find_clusters(hits):
     time_taken = time.time() - begin
 
     logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-        clusters, len(hits), time_taken, lib.config.settings.cores, len(hits) / time_taken))
+        clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
 
 
 def find_cluster_matches(settings, hits):
