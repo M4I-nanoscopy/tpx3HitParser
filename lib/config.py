@@ -50,6 +50,7 @@ def parse_config(argv=None):
         # Fix boolean values
         defaults['hits_remove_cross'] = config_parser.getboolean('Defaults', 'hits_remove_cross')
         defaults['hits_combine_chips'] = config_parser.getboolean('Defaults', 'hits_combine_chips')
+        defaults['cluster_stats'] = config_parser.getboolean('Defaults', 'cluster_stats')
     else:
         logger.warning("No config file being used for setting constant defaults")
 
