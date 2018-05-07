@@ -25,9 +25,15 @@ def find_clusters(hits):
         logger.warning("Cluster chunk size is larger than amount of hits")
         lib.config.settings.cluster_chunk_size = len(hits)
 
+    # Respect max_hits setting also here
+    if 0 < lib.config.settings.max_hits < len(hits):
+        max_hits = lib.config.settings.max_hits
+    else:
+        max_hits = len(hits)
+
     r = 0
     start = 0
-    while start < len(hits):
+    while start < max_hits:
         end = start + lib.config.settings.cluster_chunk_size
 
         if end > len(hits):
