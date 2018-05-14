@@ -1,6 +1,7 @@
 import logging
 import multiprocessing
 import time
+import random
 from scipy import ndimage
 
 import tpx3format
@@ -9,6 +10,7 @@ import numpy as np
 import os
 import lib
 from tqdm import tqdm
+
 # https://github.com/tqdm/tqdm/issues/481
 tqdm.monitor_interval = 0
 
@@ -22,7 +24,9 @@ def localise_events(cluster_matrix, cluster_info, method):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     if method == "centroid":
-        events = centroid(cluster_matrix, cluster_info, events)
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_centroid)
+    if method == "random":
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
     elif method == "cnn":
         events = cnn(cluster_matrix, cluster_info, events)
 
@@ -34,7 +38,7 @@ def localise_events(cluster_matrix, cluster_info, method):
     return events
 
 
-def centroid(cluster_matrix, cluster_info, events):
+def split_calculation(cluster_matrix, cluster_info, events, method):
     # Setup pool
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
     results = {}
@@ -60,7 +64,7 @@ def centroid(cluster_matrix, cluster_info, events):
         cm_chunk = cluster_matrix[start:end]
         ci_chunk = cluster_info[start:end]
 
-        results[r] = pool.apply_async(calculate_centroid, args=([cm_chunk, ci_chunk]))
+        results[r] = pool.apply_async(method, args=([cm_chunk, ci_chunk]))
         start = end
         r += 1
 
@@ -108,22 +112,44 @@ def calculate_centroid(cluster_matrix, cluster_info):
     return events
 
 
+def calculate_random(cluster_matrix, cluster_info):
+    events = np.empty(len(cluster_info), dtype=dt_event)
+
+    for idx, cluster in enumerate(cluster_matrix):
+        non_zeros = np.transpose(np.nonzero(cluster[0]))
+        c = random.sample(non_zeros, 1)
+        x = c[0][0]
+        y = c[0][1]
+
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
+
+        # The center_of_mass function considers the coordinate of the pixel as the origin. Shift this to the middle
+        # of the pixel by adding 0.5
+        events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5 + random.uniform(-0.5, 0.5)
+        events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5 + random.uniform(-0.5, 0.5)
+
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+
+    return events
+
+
 def cnn(cluster_matrix, cluster_info, events):
     # Do keras imports here, as importing earlier may raise errors unnecessary when keras will not be used
     from keras.models import load_model
-    from keras import backend as K
+    import keras
 
     # Hide some of the TensorFlow debug information
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
     # Set amount of cores to use for TensorFlow when using CPU only
     # Set to a limit of 1 GPU
-    K.set_session(
-        K.tf.Session(config=K.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
-                                             inter_op_parallelism_threads=lib.config.settings.cores,
-                                             device_count={'GPU': 1}
-                                             )
-                     )
+    keras.backend.set_session(
+        keras.backend.tf.Session(config=keras.backend.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
+                                                                     inter_op_parallelism_threads=lib.config.settings.cores,
+                                                                     device_count={'GPU': 1}
+                                                                     )
+                                 )
     )
 
     # Load model
@@ -141,7 +167,8 @@ def cnn(cluster_matrix, cluster_info, events):
 
     # Check model shape and input shape
     if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
-        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size?' % (cluster_matrix.shape, model.layers[0].input_shape))
+        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size?' % (
+            cluster_matrix.shape, model.layers[0].input_shape))
         raise Exception
 
     # Run CNN prediction
