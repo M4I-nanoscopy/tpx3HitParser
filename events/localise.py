@@ -25,10 +25,14 @@ def localise_events(cluster_matrix, cluster_info, method):
 
     if method == "centroid":
         events = split_calculation(cluster_matrix, cluster_info, events, calculate_centroid)
-    if method == "random":
+    elif method == "random":
         events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
+    elif method == "highest_toa":
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_toa)
     elif method == "cnn":
         events = cnn(cluster_matrix, cluster_info, events)
+    else:
+        raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
     time_taken = time.time() - begin
 
@@ -127,6 +131,26 @@ def calculate_random(cluster_matrix, cluster_info):
         # of the pixel by adding 0.5
         events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5 + random.uniform(-0.5, 0.5)
         events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5 + random.uniform(-0.5, 0.5)
+
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+
+    return events
+
+
+def calculate_toa(cluster_matrix, cluster_info):
+    events = np.empty(len(cluster_info), dtype=dt_event)
+
+    for idx, cluster in enumerate(cluster_matrix):
+        i = np.argmax(cluster[1])
+        x,y = np.unravel_index(i,(10,10))
+
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
+
+        # The center_of_mass function considers the coordinate of the pixel as the origin. Shift this to the middle
+        # of the pixel by adding 0.5
+        events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5
+        events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
