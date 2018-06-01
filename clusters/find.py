@@ -104,93 +104,34 @@ def find_cluster_matches(settings, hits):
     # TODO: Move this var to configuration options
     time_size = 50
 
-    m = np.column_stack((hits['x'], hits['y'], hits['ToT'] / 25, hits['chipId']))
+    m = np.column_stack((hits['x'], hits['y'], hits['cToA'] / 50, hits['chipId']))
 
     t = cKDTree(m, 30)
-    clusters = t.query_ball_tree(t, 1)
-
-    #for cluster_hits in clusters:
-    #    cluster = hits[cluster_hits]
-
-
-
-
-    return
-
-    # Recast to signed integers, as we need to subtract
-    # TODO: This casting causes a lot of extra memory to be used, can we do this better?
-    x = hits['x'].astype('int16')
-    y = hits['y'].astype('int16')
-    t = hits['cToA'].astype('int32')
-    c = hits['chipId'].astype('int8')
-
-    # Calculate for all events the difference in x, y, cTOA and chip with all other event
-    # This is a memory intensive step! We're creating 4 times a cluster_chunk_size * cluster_chunk_size sized matrix
-    diff_x = x.reshape(-1, 1) - x
-    diff_y = y.reshape(-1, 1) - y
-    diff_t = t.reshape(-1, 1) - t
-    diff_c = c.reshape(-1, 1) - c
-
-    # Look for events that are right next to our current pixel
-    match_x = np.logical_and(diff_x < 2, diff_x > -2)
-    match_y = np.logical_and(diff_y < 2, diff_y > -2)
-
-    # Look for events which are close in ToA
-    match_t = (np.absolute(diff_t) < time_size)
-
-    # Look for events from the same chip
-    match_c = (diff_c == 0)
-
-    # Combine these condition into one match matrix
-    matches = np.logical_and.reduce((match_c, match_x, match_y, match_t))
+    clusters = t.query_ball_tree(t, 2)
 
     # We have to build the cluster matrices already here, and resize later
-    # cluster_info = np.zeros(len(hits), dtype=dt_ci)
-    # cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
-    # cluster_stats = list()
+    cluster_info = np.zeros(len(hits), dtype=dt_ci)
+    cluster_stats = list()
     c = 0
 
     # Loop over all columns of matches, and handle event/cluster per column
-    for m in range(0, matches.shape[0]):
-        select = matches[:, m]
+    for cluster_select in clusters:
+        cluster = hits[cluster_select]
 
-        # Select all the matches of the events of this initial event
-        selected = matches[select]
+        # Only use clean clusters
+        ci = build_cluster(cluster, settings)
+        cluster_info[c] = ci
+        c += 1
 
-        prev_len = -1
-        # Find all events that belong to this cluster, but are not directly connected to the event we started with
-        while prev_len != len(selected):
-            prev_len = len(selected)
-            select = np.any(selected.transpose(), axis=1)
-            selected = matches[select]
+        # Build cluster stats if requested
+        if settings.cluster_stats is True:
+            stats = [len(cluster), np.sum(cluster['ToT'])]
+            cluster_stats.append(stats)
 
-        cluster = hits[select]
-
-        # # Only use clean clusters
-        # if clean_cluster(cluster, settings):
-        #     try:
-        #         ci, cm = build_cluster(cluster, settings)
-        #         cluster_info[c] = ci
-        #         cluster_matrix[c] = cm
-        #         c += 1
-        #     except ClusterSizeExceeded:
-        #         logger.warning("Cluster exceeded max cluster size "
-        #                        "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
-        #         pass
-        #
-        # # Build cluster stats if requested
-        # if settings.cluster_stats is True and len(cluster) > 0:
-        #     stats = [len(cluster), np.sum(cluster['ToT'])]
-        #     cluster_stats.append(stats)
-
-        # Make sure the events we used are not being used a second time
-        matches[select] = False
-    #
     # # We made the cluster_info and cluster_matrix too big, resize to actual size
-    # cluster_info = np.resize(cluster_info, c)
-    # cluster_matrix = np.resize(cluster_matrix, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
-    #
-    # return cluster_info, cluster_matrix, cluster_stats
+    cluster_info = np.resize(cluster_info, c)
+
+    return cluster_info, cluster_stats
 
 
 # Clean clusters based on their summed ToT and cluster size
@@ -209,7 +150,6 @@ def clean_cluster(c, settings):
 def build_cluster(c, settings):
     m_size = settings.cluster_matrix_size
     ci = np.zeros(1, dtype=dt_ci)
-    cluster = np.zeros((2, m_size, m_size), dt_clusters)
 
     # Base cTOA value
     min_ctoa = min(c['cToA'])
@@ -219,21 +159,6 @@ def build_cluster(c, settings):
     min_x = min(c['x'])
     min_y = min(c['y'])
 
-    c['x'] = c['x'] - min_x
-    c['y'] = c['y'] - min_y
-
-    rows = c['x']
-    cols = c['y']
-    tot = c['ToT']
-    toa = c['cToA']
-
-    try:
-        # TODO: We're throwing away NaN information here of pixels that have not been hit, but this function is fast!
-        cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
-        cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
-    except ValueError:
-        raise ClusterSizeExceeded
-
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
     ci['x'] = min_x
@@ -241,7 +166,7 @@ def build_cluster(c, settings):
     ci['TSPIDR'] = c[0]['TSPIDR']
     ci['cToA'] = min_ctoa
 
-    return ci, cluster
+    return ci
 
 
 class ClusterSizeExceeded(Exception):
