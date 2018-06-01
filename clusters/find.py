@@ -1,35 +1,45 @@
-import _tkinter
-from matplotlib import patches
+from scipy.spatial.ckdtree import cKDTree
 from tqdm import tqdm
 import lib
 import logging
-import multiprocessing
+from multiprocessing import Process, JoinableQueue, Queue
 import time
+
+from lib import io
 from lib.constants import *
 import numpy as np
 import scipy.sparse
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger('root')
 
 
 def find_clusters(hits):
     logger.info("Started finding clusters")
-
-    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
-    results = {}
     begin = time.time()
-
-    # First split hits in chunks defined by cluster_chunk_size
-    if lib.config.settings.cluster_chunk_size > len(hits):
-        logger.warning("Cluster chunk size is larger than amount of hits")
-        lib.config.settings.cluster_chunk_size = len(hits)
 
     # Respect max_hits setting also here
     if 0 < lib.config.settings.max_hits < len(hits):
         max_hits = lib.config.settings.max_hits
     else:
         max_hits = len(hits)
+
+    progress_bar = tqdm(total=max_hits, unit="hits", smoothing=0.1, unit_scale=True)
+
+    # Build Queues to handle the input data and the resulting clusters
+    results = Queue()
+    inputs = Queue()
+
+    # Build workers to process the input
+    workers = []
+    for i in range(lib.config.settings.cores):
+        p = Process(target=cluster_worker, args=(inputs, results, lib.config.settings))
+        p.start()
+        workers.append(p)
+
+    # First split hits in chunks defined by cluster_chunk_size
+    if lib.config.settings.cluster_chunk_size > len(hits):
+        logger.warning("Cluster chunk size is larger than amount of hits")
+        lib.config.settings.cluster_chunk_size = len(hits)
 
     r = 0
     start = 0
@@ -40,39 +50,72 @@ def find_clusters(hits):
             end = max_hits
 
         # Reads hits chunk wise
-        hits_chunk = hits[start:end]
+        #hits_chunk = hits[start:end]
 
-        # The `lib.config.settings` is passed here as Windows will not pass it as global var
-        results[r] = pool.apply_async(find_cluster_matches, args=([lib.config.settings, hits_chunk]))
+        inputs.put([start, end])
 
         start = end
         r += 1
 
-    pool.close()
+    # Build result worker to process results to file
+    result_worker = Process(target=cluster_results_worker, args=(inputs, results, progress_bar))
+    result_worker.start()
 
-    progress_bar = tqdm(total=max_hits, unit="hits", smoothing=0.1, unit_scale=True)
+    workers[0].join()
 
-    clusters = 0
-    for idx in range(0, len(results)):
-        ci, cm, s = results[idx].get(timeout=1000)
-        progress_bar.update(lib.config.settings.cluster_chunk_size)
-
-        clusters += len(ci)
-
-        yield ci, cm, s
-
-        # Do not keep previous results object, reduces memory
-        del results[idx]
 
     time_taken = time.time() - begin
 
-    logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-        clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
+    #logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
+    #    clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
+
+def cluster_results_worker(inputs, results, progress_bar):
+
+    while True:
+        hits = results.get()
+        progress_bar.update(hits)
+
+    #
+    # clusters = 0
+    # for idx in range(0, len(results)):
+    #     ci, cm, s = results[idx].get(timeout=1000)
+    #
+    #     clusters += len(ci)
+    #
+    #     yield ci, cm, s
+    #
+    #     # Do not keep previous results object, reduces memory
+    #     del results[idx]
+
+def cluster_worker(inputs, results, settings):
+    io = lib.io()
+    hits = io.read_hits(settings.hits)
+
+    while True:
+        hits_range = inputs.get()
+        hits_chunk = hits[hits_range[0]:hits_range[1]]
+        # hits_chunk = inputs.get()
+        find_cluster_matches(settings, hits_chunk)
+
+        results.put(len(hits_chunk))
 
 
 def find_cluster_matches(settings, hits):
     # TODO: Move this var to configuration options
     time_size = 50
+
+    m = np.column_stack((hits['x'], hits['y'], hits['ToT'] / 25, hits['chipId']))
+
+    t = cKDTree(m, 30)
+    clusters = t.query_ball_tree(t, 1)
+
+    #for cluster_hits in clusters:
+    #    cluster = hits[cluster_hits]
+
+
+
+
+    return
 
     # Recast to signed integers, as we need to subtract
     # TODO: This casting causes a lot of extra memory to be used, can we do this better?
@@ -102,9 +145,9 @@ def find_cluster_matches(settings, hits):
     matches = np.logical_and.reduce((match_c, match_x, match_y, match_t))
 
     # We have to build the cluster matrices already here, and resize later
-    cluster_info = np.zeros(len(hits), dtype=dt_ci)
-    cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
-    cluster_stats = list()
+    # cluster_info = np.zeros(len(hits), dtype=dt_ci)
+    # cluster_matrix = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
+    # cluster_stats = list()
     c = 0
 
     # Loop over all columns of matches, and handle event/cluster per column
@@ -123,31 +166,31 @@ def find_cluster_matches(settings, hits):
 
         cluster = hits[select]
 
-        # Only use clean clusters
-        if clean_cluster(cluster, settings):
-            try:
-                ci, cm = build_cluster(cluster, settings)
-                cluster_info[c] = ci
-                cluster_matrix[c] = cm
-                c += 1
-            except ClusterSizeExceeded:
-                logger.warning("Cluster exceeded max cluster size "
-                               "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
-                pass
-
-        # Build cluster stats if requested
-        if settings.cluster_stats is True and len(cluster) > 0:
-            stats = [len(cluster), np.sum(cluster['ToT'])]
-            cluster_stats.append(stats)
+        # # Only use clean clusters
+        # if clean_cluster(cluster, settings):
+        #     try:
+        #         ci, cm = build_cluster(cluster, settings)
+        #         cluster_info[c] = ci
+        #         cluster_matrix[c] = cm
+        #         c += 1
+        #     except ClusterSizeExceeded:
+        #         logger.warning("Cluster exceeded max cluster size "
+        #                        "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
+        #         pass
+        #
+        # # Build cluster stats if requested
+        # if settings.cluster_stats is True and len(cluster) > 0:
+        #     stats = [len(cluster), np.sum(cluster['ToT'])]
+        #     cluster_stats.append(stats)
 
         # Make sure the events we used are not being used a second time
         matches[select] = False
-
-    # We made the cluster_info and cluster_matrix too big, resize to actual size
-    cluster_info = np.resize(cluster_info, c)
-    cluster_matrix = np.resize(cluster_matrix, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
-
-    return cluster_info, cluster_matrix, cluster_stats
+    #
+    # # We made the cluster_info and cluster_matrix too big, resize to actual size
+    # cluster_info = np.resize(cluster_info, c)
+    # cluster_matrix = np.resize(cluster_matrix, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
+    #
+    # return cluster_info, cluster_matrix, cluster_stats
 
 
 # Clean clusters based on their summed ToT and cluster size
