@@ -1,7 +1,8 @@
+import signal
 from tqdm import tqdm
 import lib
 import logging
-from multiprocessing import Process, JoinableQueue
+from multiprocessing import Process, Queue, Lock
 import time
 from lib.constants import *
 import numpy as np
@@ -22,22 +23,15 @@ def find_clusters(hits):
     progress_bar = tqdm(total=max_hits, unit="hits", smoothing=0.1, unit_scale=True)
 
     # Build Queues to handle the input data and the resulting clusters
-    results = JoinableQueue()
-    inputs = JoinableQueue()
-
-    # Build workers to process the input
-    workers = []
-    for i in range(lib.config.settings.cores):
-        p = Process(target=cluster_worker, args=(inputs, results, lib.config.settings))
-        p.start()
-        workers.append(p)
+    results = Queue()
+    inputs = Queue()
+    hits_lock = Lock()
 
     # First split hits in chunks defined by cluster_chunk_size
     if lib.config.settings.cluster_chunk_size > len(hits):
         logger.warning("Cluster chunk size is larger than amount of hits")
         lib.config.settings.cluster_chunk_size = len(hits)
 
-    r = 0
     start = 0
     while start < max_hits:
         end = start + lib.config.settings.cluster_chunk_size
@@ -48,48 +42,90 @@ def find_clusters(hits):
         inputs.put([start, end])
 
         start = end
-        r += 1
+
+    # Signal end
+    inputs.put([-1, -1])
+
+    # Build workers to process the input
+    workers = []
+    for i in range(lib.config.settings.cores):
+        p = Process(target=cluster_worker, args=(inputs, results, hits_lock, lib.config.settings))
+        p.start()
+        workers.append(p)
 
     # Build result worker to process results to file
-    result_worker = Process(target=cluster_results_worker, args=(inputs, results, progress_bar, lib.config.settings))
+    result_worker = Process(target=cluster_results_worker, args=(results, progress_bar, lib.config.settings),
+                            name='Result-Writer')
     result_worker.start()
 
-    inputs.join()
+    try:
+        # Wait for result worker to finish
+        result_worker.join()
+    except KeyboardInterrupt:
+
+        # Handle interrupt signals for child processes
+        for worker in workers:
+            worker.terminate()
+            worker.join()
+        result_worker.terminate()
+        result_worker.join()
+        progress_bar.close()
+        raise KeyboardInterrupt
+
+    # Terminate workers and progress bar
+    for worker in workers:
+        worker.terminate()
+        worker.join()
+    progress_bar.close()
 
     time_taken = time.time() - begin
 
-    #logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
-    #    clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
+    return time_taken
 
-def cluster_results_worker(inputs, results, progress_bar, settings):
+
+def cluster_results_worker(results, progress_bar, settings):
+    # Ignore the interrupt signal. Let parent handle that.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    io = lib.io()
+    io.open_write(settings.output, settings.overwrite)
 
     while True:
         clusters = results.get()
+
+        # Update progress bar
         progress_bar.update(settings.cluster_chunk_size)
 
-    #
-    # clusters = 0
-    # for idx in range(0, len(results)):
-    #     ci, cm, s = results[idx].get(timeout=1000)
-    #
-    #     clusters += len(ci)
-    #
-    #     yield ci, cm, s
-    #
-    #     # Do not keep previous results object, reduces memory
-    #     del results[idx]
+        # Stop on end signal
+        if clusters is None:
+            io.close_write()
+            return
 
-def cluster_worker(inputs, results, settings):
+        io.write_cluster_index(clusters)
+
+
+def cluster_worker(inputs, results, hits_lock, settings):
+    # Ignore the interupt signal. Let parent handle that.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     io = lib.io()
+
+    # The HDF5 library likes parallel file access not to be simultaneous so use lock
+    hits_lock.acquire()
     hits = io.read_hits(settings.hits)
+    hits_lock.release()
 
     while True:
         hits_range = inputs.get()
-        hits_chunk = hits[hits_range[0]:hits_range[1]]
 
-        clusters = find_cluster_matches(settings, hits_chunk, hits_range[0])
+        if hits_range[0] == -1:
+            # Signal end
+            results.put(None)
+        else:
+            hits_chunk = hits[hits_range[0]:hits_range[1]]
+            clusters = find_cluster_matches(settings, hits_chunk, hits_range[0])
 
-        results.put(clusters)
+            results.put(clusters)
 
 
 def find_cluster_matches(settings, hits, hits_start):
@@ -149,11 +185,11 @@ def find_cluster_matches(settings, hits, hits_start):
 
         # Only use clean clusters
         if len(cluster) > 0 and clean_cluster(cluster, settings):
-            # Find the indeces and increase with the outside hit index
-            cluster_indeces = np.where(select)[0] + hits_start
+            # Find the indices and increase with the outside hit index
+            cluster_indices = np.where(select)[0] + hits_start
 
             # Fill up the cluster with zeros
-            clusters[c] = np.append(cluster_indeces, np.zeros((16 - len(cluster_indeces)), dtype='int64'))
+            clusters[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices)), dtype='int64'))
 
             c += 1
 
@@ -162,8 +198,8 @@ def find_cluster_matches(settings, hits, hits_start):
         #    stats = [len(cluster), np.sum(cluster['ToT'])]
         #    cluster_stats.append(stats)
 
-    # # We made the cluster_info and cluster_matrix too big, resize to actual size
-    clusters = np.resize(clusters, c)
+    # We made the cluster_info and cluster_matrix too big, resize to actual size
+    clusters = np.resize(clusters, (c, 16))
 
     return clusters
 
@@ -205,4 +241,3 @@ def build_cluster(c, settings):
 
 class ClusterSizeExceeded(Exception):
     pass
-

@@ -21,7 +21,7 @@ class io:
             raise IOException("Output file already exists and --overwrite not specified.")
 
         try:
-            self.write = h5py.File(file_name, 'w')
+            self.write = h5py.File(file_name, 'a')
         except IOError as e:
             raise IOException("Could not open file for writing: %s" % str(e))
 
@@ -102,6 +102,18 @@ class io:
 
             ci_f[old:] = ci
             cm_f[old:] = cm
+
+    def write_cluster_index(self, clusters):
+        if 'cluster_index' not in self.write:
+            self.write.create_dataset('cluster_index', shape=(len(clusters),16), dtype='int64', maxshape=(None,16),
+                                      chunks=(constants.CLUSTER_CHUNK_SIZE, 16), data=clusters)
+        else:
+            clusters_f = self.write['cluster_index']
+
+            old = len(clusters_f)
+            clusters_f.resize(old + len(clusters), 0)
+
+            clusters_f[old:] = clusters
 
     def store_clusters(self, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
         self.write_base_attributes('clusters')

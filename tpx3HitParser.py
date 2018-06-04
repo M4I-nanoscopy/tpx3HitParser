@@ -68,13 +68,13 @@ def main():
     cluster_matrix = None
     cluster_stats = []
     if settings.C:
-        for ci_chunk, cm_chunk, stats_chunk in clusters.find_clusters(hits):
-            io.write_cluster_chunk(ci_chunk, cm_chunk)
-            cluster_stats.extend(stats_chunk)
+        time_taken = clusters.find_clusters(hits)
+
+        # cluster_stats.extend(stats_chunk)
 
         # Store clusters and cluster stats, we may delete it later
-        io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
-                          settings.cluster_max_size, settings.cluster_min_size)
+        #io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
+        #                  settings.cluster_max_size, settings.cluster_min_size)
 
         # Read clusters from just written data, not loaded in memory
         cluster_matrix, cluster_info = io.read_clusters(settings.output)
