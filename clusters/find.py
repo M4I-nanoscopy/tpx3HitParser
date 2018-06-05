@@ -2,7 +2,7 @@ import signal
 from tqdm import tqdm
 import lib
 import logging
-from multiprocessing import Process, Queue, Lock
+from multiprocessing import Process, Queue
 import time
 from lib.constants import *
 import numpy as np
@@ -25,7 +25,14 @@ def find_clusters(hits):
     # Build Queues to handle the input data and the resulting clusters
     results = Queue()
     inputs = Queue()
-    hits_lock = Lock()
+
+    # Build workers to process the input
+    workers = []
+    for i in range(lib.config.settings.cores):
+        p = Process(target=cluster_worker, args=(inputs, results, lib.config.settings))
+        p.daemon = True
+        p.start()
+        workers.append(p)
 
     # First split hits in chunks defined by cluster_chunk_size
     if lib.config.settings.cluster_chunk_size > len(hits):
@@ -40,20 +47,12 @@ def find_clusters(hits):
             end = max_hits
 
         # Build up queue of input
-        inputs.put([start, end])
+        inputs.put((hits[start:end], start))
 
         start = end
 
     # Signal end to works at end of queue
-    inputs.put([-1, -1])
-
-    # Build workers to process the input
-    workers = []
-    for i in range(lib.config.settings.cores):
-        p = Process(target=cluster_worker, args=(inputs, results, hits_lock, lib.config.settings))
-        p.daemon = True
-        p.start()
-        workers.append(p)
+    inputs.put((None, None))
 
     total_clusters = 0
     try:
@@ -88,30 +87,20 @@ def find_clusters(hits):
         total_clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
 
 
-def cluster_worker(inputs, results, hits_lock, settings):
+def cluster_worker(inputs, results, settings):
     # Ignore the interrupt signal. Let parent handle that.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
-    io = lib.io()
-
-    # The HDF5 library likes parallel file access not to be simultaneous so use lock
-    hits_lock.acquire()
-    if settings.hits:
-        hits = io.read_hits(settings.hits)
-    if settings.raw:
-        hits = io.read_hits(settings.output)
-    hits_lock.release()
-
     while True:
-        hits_range = inputs.get()
+        hits, start_idx = inputs.get()
 
-        if hits_range[0] == -1:
+        if hits is None:
             # Signal end
             results.put((None, None))
         else:
-            hits_chunk = hits[hits_range[0]:hits_range[1]]
-            clusters, cluster_stats = find_cluster_matches(settings, hits_chunk, hits_range[0])
+            clusters, cluster_stats = find_cluster_matches(settings, hits, start_idx)
 
+            # Put results on result queue
             results.put((clusters, cluster_stats))
 
 
