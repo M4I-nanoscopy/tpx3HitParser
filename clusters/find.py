@@ -43,32 +43,39 @@ def find_clusters(hits):
 
         start = end
 
-    # Signal end
+    # Signal end to works at end of queue
     inputs.put([-1, -1])
 
     # Build workers to process the input
     workers = []
     for i in range(lib.config.settings.cores):
         p = Process(target=cluster_worker, args=(inputs, results, hits_lock, lib.config.settings))
+        p.daemon = True
         p.start()
         workers.append(p)
 
-    # Build result worker to process results to file
-    result_worker = Process(target=cluster_results_worker, args=(results, progress_bar, lib.config.settings),
-                            name='Result-Writer')
-    result_worker.start()
-
+    total_clusters = 0
     try:
         # Wait for result worker to finish
-        result_worker.join()
-    except KeyboardInterrupt:
+        while True:
+            clusters, cluster_stats = results.get()
 
+            # Update progress bar
+            progress_bar.update(lib.config.settings.cluster_chunk_size)
+
+            # Stop on end signal
+            if clusters is None:
+                break
+
+            total_clusters += len(clusters)
+
+            # Return to be written to file
+            yield clusters, cluster_stats
+    except KeyboardInterrupt:
         # Handle interrupt signals for child processes
         for worker in workers:
             worker.terminate()
             worker.join()
-        result_worker.terminate()
-        result_worker.join()
         progress_bar.close()
         raise KeyboardInterrupt
 
@@ -80,32 +87,12 @@ def find_clusters(hits):
 
     time_taken = time.time() - begin
 
-    return time_taken
-
-
-def cluster_results_worker(results, progress_bar, settings):
-    # Ignore the interrupt signal. Let parent handle that.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    io = lib.io()
-    io.open_write(settings.output, settings.overwrite)
-
-    while True:
-        clusters = results.get()
-
-        # Update progress bar
-        progress_bar.update(settings.cluster_chunk_size)
-
-        # Stop on end signal
-        if clusters is None:
-            io.close_write()
-            return
-
-        io.write_cluster_index(clusters)
+    logger.info("Finished finding %d clusters from %d hits in %d seconds on %d cores ( %d hits / second ) " % (
+        total_clusters, max_hits, time_taken, lib.config.settings.cores, max_hits / time_taken))
 
 
 def cluster_worker(inputs, results, hits_lock, settings):
-    # Ignore the interupt signal. Let parent handle that.
+    # Ignore the interrupt signal. Let parent handle that.
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     io = lib.io()
@@ -120,12 +107,12 @@ def cluster_worker(inputs, results, hits_lock, settings):
 
         if hits_range[0] == -1:
             # Signal end
-            results.put(None)
+            results.put((None, None))
         else:
             hits_chunk = hits[hits_range[0]:hits_range[1]]
-            clusters = find_cluster_matches(settings, hits_chunk, hits_range[0])
+            clusters, cluster_stats = find_cluster_matches(settings, hits_chunk, hits_range[0])
 
-            results.put(clusters)
+            results.put((clusters, cluster_stats))
 
 
 def find_cluster_matches(settings, hits, hits_start):
@@ -161,7 +148,7 @@ def find_cluster_matches(settings, hits, hits_start):
 
     # We have to build the cluster matrices already here, and resize later
     clusters = np.zeros((len(hits), 16), dtype='int64')
-    # cluster_stats = list()
+    cluster_stats = list()
     c = 0
 
     # Loop over all columns of matches, and handle event/cluster per column
@@ -194,14 +181,14 @@ def find_cluster_matches(settings, hits, hits_start):
             c += 1
 
         # Build cluster stats if requested
-        # if settings.cluster_stats is True:
-        #    stats = [len(cluster), np.sum(cluster['ToT'])]
-        #    cluster_stats.append(stats)
+        if settings.cluster_stats is True and len(cluster) > 0:
+           stats = [len(cluster), np.sum(cluster['ToT'])]
+           cluster_stats.append(stats)
 
     # We made the cluster_info and cluster_matrix too big, resize to actual size
     clusters = np.resize(clusters, (c, 16))
 
-    return clusters
+    return clusters, cluster_stats
 
 
 # Clean clusters based on their summed ToT and cluster size

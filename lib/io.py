@@ -21,7 +21,7 @@ class io:
             raise IOException("Output file already exists and --overwrite not specified.")
 
         try:
-            self.write = h5py.File(file_name, 'a')
+            self.write = h5py.File(file_name, 'w')
         except IOError as e:
             raise IOException("Could not open file for writing: %s" % str(e))
 
@@ -84,28 +84,9 @@ class io:
     def del_hits(self):
         del self.write['hits']
 
-    def write_cluster_chunk(self, ci, cm):
-        if 'cluster_info' not in self.write:
-            cms = lib.config.settings.cluster_matrix_size
-            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
-                                      chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
-            self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype=constants.dt_clusters, maxshape=(None, 2, cms, cms),
-                                      chunks=(constants.CLUSTER_CHUNK_SIZE, 2, cms, cms), data=cm)
-        else:
-            ci_f = self.write['cluster_info']
-            cm_f = self.write['clusters']
-
-            old = len(ci_f)
-
-            ci_f.resize(old + len(ci), 0)
-            cm_f.resize(old + len(cm), 0)
-
-            ci_f[old:] = ci
-            cm_f[old:] = cm
-
-    def write_cluster_index(self, clusters):
+    def write_cluster_index_chunk(self, clusters):
         if 'cluster_index' not in self.write:
-            self.write.create_dataset('cluster_index', shape=(len(clusters),16), dtype='int64', maxshape=(None,16),
+            self.write.create_dataset('cluster_index', shape=(len(clusters), 16), dtype='int64', maxshape=(None,16),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE, 16), data=clusters)
         else:
             clusters_f = self.write['cluster_index']
@@ -116,11 +97,10 @@ class io:
             clusters_f[old:] = clusters
 
     def store_clusters(self, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
-        self.write_base_attributes('clusters')
-        self.write_base_attributes('cluster_info')
+        self.write_base_attributes('cluster_index')
 
         # Store cluster_stats
-        self.write.create_dataset('cluster_stats', shape=(len(cluster_stats),2), dtype='uint16', data=cluster_stats)
+        self.write.create_dataset('cluster_stats', shape=(len(cluster_stats), 2), dtype='uint16', data=cluster_stats)
 
         self.write['cluster_stats'].attrs.update({
             'cluster_min_sum_tot': cluster_min_sum_tot,
@@ -159,13 +139,10 @@ class io:
     def read_clusters(self, file_name):
         f = self.read_h5(file_name)
 
-        if 'clusters' not in f:
-            raise IOException("File %s does not have a /clusters dataset" % file_name)
+        if 'cluster_index' not in f:
+            raise IOException("File %s does not have a /cluster_index dataset" % file_name)
 
-        if 'cluster_info' not in f:
-            raise IOException("File %s does not have a /cluster_info dataset" % file_name)
-
-        return f['clusters'], f['cluster_info']
+        return f['cluster_index']
 
 
 class IOException(Exception):

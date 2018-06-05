@@ -64,20 +64,19 @@ def main():
         frames.spidr_time_stats(hits)
 
     # Clusters ###
-    cluster_info = None
-    cluster_matrix = None
+    cluster_index = None
     cluster_stats = []
     if settings.C:
-        time_taken = clusters.find_clusters(hits)
-
-        # cluster_stats.extend(stats_chunk)
+        for ci_chunk, stats_chunk in clusters.find_clusters(hits):
+            io.write_cluster_index_chunk(ci_chunk)
+            cluster_stats.extend(stats_chunk)
 
         # Store clusters and cluster stats, we may delete it later
-        #io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
-        #                  settings.cluster_max_size, settings.cluster_min_size)
+        io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
+                          settings.cluster_max_size, settings.cluster_min_size)
 
         # Read clusters from just written data, not loaded in memory
-        cluster_matrix, cluster_info = io.read_clusters(settings.output)
+        cluster_index = io.read_clusters(settings.output)
     elif settings.clusters:
         try:
             cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
