@@ -39,6 +39,7 @@ def find_clusters(hits):
         if end > max_hits:
             end = max_hits
 
+        # Build up queue of input
         inputs.put([start, end])
 
         start = end
@@ -72,18 +73,14 @@ def find_clusters(hits):
             # Return to be written to file
             yield clusters, cluster_stats
     except KeyboardInterrupt:
-        # Handle interrupt signals for child processes
+        # The finally block is executed always, but the KeyboardInterrupt needs to be reraised to be handled by parent
+        raise KeyboardInterrupt
+    finally:
+        # Terminate workers and progress bar
         for worker in workers:
             worker.terminate()
             worker.join()
         progress_bar.close()
-        raise KeyboardInterrupt
-
-    # Terminate workers and progress bar
-    for worker in workers:
-        worker.terminate()
-        worker.join()
-    progress_bar.close()
 
     time_taken = time.time() - begin
 
@@ -99,7 +96,10 @@ def cluster_worker(inputs, results, hits_lock, settings):
 
     # The HDF5 library likes parallel file access not to be simultaneous so use lock
     hits_lock.acquire()
-    hits = io.read_hits(settings.hits)
+    if settings.hits:
+        hits = io.read_hits(settings.hits)
+    if settings.raw:
+        hits = io.read_hits(settings.output)
     hits_lock.release()
 
     while True:
@@ -182,8 +182,8 @@ def find_cluster_matches(settings, hits, hits_start):
 
         # Build cluster stats if requested
         if settings.cluster_stats is True and len(cluster) > 0:
-           stats = [len(cluster), np.sum(cluster['ToT'])]
-           cluster_stats.append(stats)
+            stats = [len(cluster), np.sum(cluster['ToT'])]
+            cluster_stats.append(stats)
 
     # We made the cluster_info and cluster_matrix too big, resize to actual size
     clusters = np.resize(clusters, (c, 16))

@@ -96,6 +96,9 @@ class io:
 
             clusters_f[old:] = clusters
 
+        # This flush was required to prevent file corruption. Maybe we need to buffer clusters until CLUSTER_CHUNK_SIZE
+        self.write.flush()
+
     def store_clusters(self, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
         self.write_base_attributes('cluster_index')
 
