@@ -17,58 +17,57 @@ tqdm.monitor_interval = 0
 logger = logging.getLogger('root')
 
 
-def localise_events(cluster_matrix, cluster_info, method):
-    logger.info("Started event localization on %d events using method %s" % (len(cluster_info), method))
+def localise_events(cluster_index, method):
+    logger.info("Started event localization on %d events using method %s" % (len(cluster_index), method))
     begin = time.time()
 
-    events = np.empty(len(cluster_info), dtype=dt_event)
+    events = np.empty(len(cluster_index), dtype=dt_event)
 
     if method == "centroid":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_centroid)
+        events = split_calculation(cluster_index, events, calculate_centroid)
     elif method == "random":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
+        events = split_calculation(cluster_index, events, calculate_random)
     elif method == "highest_toa":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_toa)
+        events = split_calculation(cluster_index, events, calculate_toa)
     elif method == "cnn":
-        events = cnn(cluster_matrix, cluster_info, events)
+        events = cnn(cluster_index, events)
     else:
         raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
     time_taken = time.time() - begin
 
     logger.info(
-        "Finished event localization in %d seconds ( %d events/s )" % (time_taken, len(cluster_info) / time_taken))
+        "Finished event localization in %d seconds ( %d events/s )" % (time_taken, len(cluster_index) / time_taken))
 
     return events
 
 
-def split_calculation(cluster_matrix, cluster_info, events, method):
+def split_calculation(cluster_index, events, method):
     # Setup pool
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
     results = {}
 
     # Progress bar
-    progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
+    progress_bar = tqdm(total=len(cluster_index), unit="clusters", smoothing=0.1, unit_scale=True)
 
     # First split clusters in chunks
     chunk_size = lib.config.settings.event_chunk_size
-    if chunk_size > len(cluster_info):
+    if chunk_size > len(cluster_index):
         logger.warning("Cluster chunk size is larger than amount of events")
-        chunk_size = len(cluster_info)
+        chunk_size = len(cluster_index)
 
     start = 0
     r = 0
-    while start < len(cluster_info):
+    while start < len(cluster_index):
         end = start + chunk_size
 
-        if end > len(cluster_info):
-            end = len(cluster_info)
+        if end > len(cluster_index):
+            end = len(cluster_index)
 
         # This reads the clusters chunk wise.
-        cm_chunk = cluster_matrix[start:end]
-        ci_chunk = cluster_info[start:end]
+        cm_chunk = cluster_index[start:end]
 
-        results[r] = pool.apply_async(method, args=([cm_chunk, ci_chunk]))
+        results[r] = pool.apply_async(method, args=([cm_chunk]))
         start = end
         r += 1
 
@@ -89,7 +88,7 @@ def split_calculation(cluster_matrix, cluster_info, events, method):
     return events
 
 
-def calculate_centroid(cluster_matrix, cluster_info):
+def calculate_centroid(cluster_index):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     # Raise runtime warnings, instead of printing them
