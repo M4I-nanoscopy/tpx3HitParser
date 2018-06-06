@@ -165,7 +165,7 @@ def find_cluster_matches(settings, hits, hits_start):
             cluster_indices = np.where(select)[0] + hits_start
 
             # Fill up the cluster with zeros
-            clusters[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices)), dtype='int64'))
+            clusters[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices))))
 
             c += 1
 
