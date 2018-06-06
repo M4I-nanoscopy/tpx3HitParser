@@ -63,6 +63,10 @@ def main():
     if settings.spidr_stats and hits is not None:
         frames.spidr_time_stats(hits)
 
+    if settings.freq_tot:
+        freq_tot = tpx3format.build_freq_tot(hits)
+        io.store_freq_tot(freq_tot)
+
     # Clusters ###
     cluster_info = None
     cluster_matrix = None

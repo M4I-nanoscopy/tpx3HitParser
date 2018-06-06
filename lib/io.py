@@ -117,6 +117,10 @@ class io:
             'cluster_max_size': cluster_max_size
         })
 
+    def store_freq_tot(self, freq_tot):
+        self.write['freq_tot'] = freq_tot
+        self.write_base_attributes('freq_tot')
+
     def del_clusters(self):
         del self.write['cluster_info']
         del self.write['clusters']
