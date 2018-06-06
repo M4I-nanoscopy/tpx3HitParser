@@ -68,6 +68,6 @@ def calc_freq_tot(hits):
     freq_tot = np.zeros((512*512, 1024), dtype='uint16')
 
     for idx, hit in enumerate(hits):
-        freq_tot[vector_idx[idx]] += hit['ToT']
+        freq_tot[vector_idx[idx]][hit['ToT']] += 1
 
     return freq_tot
