@@ -24,7 +24,7 @@ def build_freq_tot(hits):
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
 
     # First split hits in chunks
-    chunk_size = HITS_CHUNK_SIZE / 10
+    chunk_size = HITS_CHUNK_SIZE
     if chunk_size > len(hits):
         logger.warning("Hits chunk size is larger than amount of hits")
         chunk_size = len(hits)
@@ -49,7 +49,7 @@ def build_freq_tot(hits):
     freq_tot = np.zeros((512 * 512, 1024), dtype='uint32')
 
     for idx in range(0, len(results)):
-        freq_tot_chunk = results[idx].get(timeout=100)
+        freq_tot_chunk = results[idx].get(timeout=1000)
 
         progress_bar.update(chunk_size)
 
