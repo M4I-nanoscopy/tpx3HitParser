@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 import argparse
 import logging
 import sys
@@ -43,7 +43,7 @@ def parse_config(argv=None):
     # Read defaults from config file
     defaults = {}
     if conf_file:
-        config_parser = ConfigParser.SafeConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read([conf_file])
         defaults = dict(config_parser.items("Defaults"))
 

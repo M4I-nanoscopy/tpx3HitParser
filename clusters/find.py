@@ -1,5 +1,3 @@
-import _tkinter
-from matplotlib import patches
 from tqdm import tqdm
 import lib
 import logging
@@ -8,7 +6,6 @@ import time
 from lib.constants import *
 import numpy as np
 import scipy.sparse
-import matplotlib.pyplot as plt
 
 logger = logging.getLogger('root')
 
