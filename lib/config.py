@@ -51,6 +51,7 @@ def parse_config(argv=None):
         defaults['hits_remove_cross'] = config_parser.getboolean('Defaults', 'hits_remove_cross')
         defaults['hits_combine_chips'] = config_parser.getboolean('Defaults', 'hits_combine_chips')
         defaults['cluster_stats'] = config_parser.getboolean('Defaults', 'cluster_stats')
+        defaults['event_cnn_tot_only'] = config_parser.getboolean('Defaults', 'event_cnn_tot_only')
     else:
         logger.warning("No config file being used for setting constant defaults")
 
@@ -107,6 +108,7 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
     c_group.add_argument("--event_chunk_size", type=int, metavar='N', help='Number of events to process at once')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
+    c_group.add_argument("--event_cnn_tot_only", metavar='0/1', type=str2bool, help='The specified CNN model uses ToT only')
     c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
 
     # Misc
