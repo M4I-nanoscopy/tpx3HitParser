@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 import argparse
 import logging
 import sys
@@ -43,7 +43,7 @@ def parse_config(argv=None):
     # Read defaults from config file
     defaults = {}
     if conf_file:
-        config_parser = ConfigParser.SafeConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read([conf_file])
         defaults = dict(config_parser.items("Defaults"))
 
@@ -51,6 +51,7 @@ def parse_config(argv=None):
         defaults['hits_remove_cross'] = config_parser.getboolean('Defaults', 'hits_remove_cross')
         defaults['hits_combine_chips'] = config_parser.getboolean('Defaults', 'hits_combine_chips')
         defaults['cluster_stats'] = config_parser.getboolean('Defaults', 'cluster_stats')
+        defaults['event_cnn_tot_only'] = config_parser.getboolean('Defaults', 'event_cnn_tot_only')
     else:
         logger.warning("No config file being used for setting constant defaults")
 
@@ -87,6 +88,7 @@ def parse_config(argv=None):
     misc_group = parser.add_argument_group('miscellaneous arguments')
     misc_group.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats')
     misc_group.add_argument("--cluster_stats", action='store_true', help='Store cluster stats')
+    misc_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
 
     # Constants
     c_group = parser.add_argument_group('constants')
@@ -96,6 +98,7 @@ def parse_config(argv=None):
     c_group.add_argument("--hits_combine_chips",metavar='0/1', type=str2bool, help='Combine the chips to one matrix')
     c_group.add_argument("--hits_cross_extra_offset", metavar='N', type=int, help='Extra offset used for the cross pixels per chip when combining the chips')
     c_group.add_argument("--hits_tot_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
+    c_group.add_argument("--hits_tot_threshold", type=int, metavar='N', help='Below this ToT threshold hits are not stored')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
     c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )
@@ -105,6 +108,7 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
     c_group.add_argument("--event_chunk_size", type=int, metavar='N', help='Number of events to process at once')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
+    c_group.add_argument("--event_cnn_tot_only", metavar='0/1', type=str2bool, help='The specified CNN model uses ToT only')
     c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
 
     # Misc

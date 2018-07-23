@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 
 import sys
-
-# Get rid of a harmless h5py FutureWarning. Can be removed with a new release of h5py
-# https://github.com/h5py/h5py/issues/961
-import warnings
-
-warnings.filterwarnings('ignore', 'Conversion of the second argument of issubdtype from .*', )
-
 import lib
 import frames
 import clusters
@@ -62,6 +55,10 @@ def main():
 
     if settings.spidr_stats and hits is not None:
         frames.spidr_time_stats(hits)
+
+    if settings.freq_tot:
+        freq_tot = tpx3format.build_freq_tot(hits)
+        io.store_freq_tot(freq_tot)
 
     # Clusters ###
     cluster_index = None

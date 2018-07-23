@@ -140,7 +140,8 @@ def read_raw(file_name, cores):
     if lib.config.settings.hits_remove_cross:
         # TODO: This is an indirect way of calculating this!
         diff = n_hits - parsed_hits
-        logger.info("Removed %d (%d percent) hits in chip border pixels" % (diff, float(diff) / float(n_hits) * 100))
+        logger.info("Removed %d (%d percent) hits in chip border pixels or below ToT threshold (%d)"
+                    % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
 
 
 def check_tot_correction(correct_file):
@@ -272,7 +273,7 @@ def parse_data_packages(positions, file_name, settings):
 
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -292,7 +293,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction):
+def parse_data_package(f, pos, tot_correction, tot_threshold):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -319,14 +320,13 @@ def parse_data_package(f, pos, tot_correction):
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
                 ToT_correct = int(ToT) + tot_correction.item((int(ToT), int(y), int(x), pos[2]))
-
-                # TODO: Remove this fix once ToT correction table cannot have this anymore
-                if ToT_correct < 0:
-                    ToT_correct = 0
             else:
                 ToT_correct = ToT
 
-            yield (pos[2], x, y, ToT_correct, CToA, time)
+            if ToT_correct < tot_threshold:
+                yield None
+            else:
+                yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None

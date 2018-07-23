@@ -30,7 +30,7 @@ def localise_events(cluster_index, method):
     elif method == "highest_toa":
         events = split_calculation(cluster_index, events, calculate_toa)
     elif method == "cnn":
-        events = cnn(cluster_index, events)
+        events = cnn(cluster_matrix, cluster_info, events, lib.config.settings.event_cnn_tot_only)
     else:
         raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
@@ -157,7 +157,7 @@ def calculate_toa(cluster_matrix, cluster_info):
     return events
 
 
-def cnn(cluster_matrix, cluster_info, events):
+def cnn(cluster_matrix, cluster_info, events, tot_only):
     # Do keras imports here, as importing earlier may raise errors unnecessary when keras will not be used
     from keras.models import load_model
     import keras
@@ -186,11 +186,12 @@ def cnn(cluster_matrix, cluster_info, events):
     model = load_model(model_path)
 
     # Delete ToA matrices, required for ToT only CNN
-    # cluster_matrix = np.delete(cluster_matrix, 1, 1)
+    if tot_only:
+        cluster_matrix = np.delete(cluster_matrix, 1, 1)
 
     # Check model shape and input shape
     if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
-        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size?' % (
+        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size or use --event_cnn_tot_only?' % (
             cluster_matrix.shape, model.layers[0].input_shape))
         raise Exception
 
