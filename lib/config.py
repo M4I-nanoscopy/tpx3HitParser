@@ -92,6 +92,7 @@ def parse_config(argv=None):
     misc_group.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats')
     misc_group.add_argument("--cluster_stats", action='store_true', help='Store cluster stats')
     misc_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
+    misc_group.add_argument("--freq_toa", action='store_true', help="Parse and store delta-ToA frequency matrix")
 
     # Constants
     c_group = parser.add_argument_group('constants')

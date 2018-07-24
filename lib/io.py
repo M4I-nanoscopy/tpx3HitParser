@@ -132,6 +132,10 @@ class io:
         self.write['freq_tot'] = freq_tot
         self.write_base_attributes('freq_tot')
 
+    def store_freq_toa(self, freq_toa):
+        self.write['freq_toa'] = freq_toa
+        self.write_base_attributes('freq_toa')
+
     def del_clusters(self):
         del self.write['cluster_info']
         del self.write['clusters']
@@ -166,6 +170,14 @@ class io:
             raise IOException("File %s does not have a /clusters dataset" % file_name)
 
         return f['clusters'], f['cluster_info']
+
+    def read_cluster_indices(self, file_name):
+        f = self.read_h5(file_name)
+
+        if 'cluster_index' not in f:
+            raise IOException("File %s does not have a /cluster_index dataset" % file_name)
+
+        return f['cluster_index']
 
 
 class IOException(Exception):

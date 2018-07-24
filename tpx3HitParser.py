@@ -87,6 +87,17 @@ def main():
             logger.error(str(e))
             return 1
 
+    if settings.freq_toa:
+        cluster_indices = None
+
+        if settings.C:
+            cluster_indices = io.read_cluster_indices(settings.output)
+        elif settings.clusters:
+            cluster_indices = io.read_cluster_indices(settings.clusters)
+
+        freq_toa = clusters.build_freq_toa(cluster_indices, hits)
+        io.store_freq_toa(freq_toa)
+
     # Events ###
     if settings.E:
         # TODO: This writes all events at once, and may cause memory issues
