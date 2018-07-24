@@ -76,7 +76,8 @@ def main():
         cluster_index = io.read_clusters(settings.output)
     elif settings.clusters:
         try:
-            cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
+            cluster_index = io.read_clusters(settings.clusters)
+            hits = io.read_hits(settings.clusters)
         except lib.IOException as e:
             logger.error(str(e))
             return 1
@@ -84,7 +85,7 @@ def main():
     # Events ###
     if settings.E:
         # TODO: This writes all events at once, and may cause memory issues
-        e = events.localise_events(cluster_index, settings.algorithm)
+        e = events.localise_events(cluster_index, hits, settings.algorithm)
 
         if settings.store_events:
             io.store_events(e, settings.algorithm, settings.event_cnn_model)
