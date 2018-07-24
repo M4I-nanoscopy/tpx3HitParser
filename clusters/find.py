@@ -6,6 +6,7 @@ from multiprocessing import Process, Queue
 import time
 from lib.constants import *
 import numpy as np
+import scipy.sparse
 
 logger = logging.getLogger('root')
 
@@ -58,19 +59,19 @@ def find_clusters(hits):
     try:
         # Wait for result worker to finish
         while True:
-            clusters, cluster_stats = results.get()
+            cm_chunk, ci_chunk, index_chunk, cluster_stats = results.get()
 
             # Update progress bar
             progress_bar.update(lib.config.settings.cluster_chunk_size)
 
             # Stop on end signal
-            if clusters is None:
+            if cm_chunk is None:
                 break
 
-            total_clusters += len(clusters)
+            total_clusters += len(cm_chunk)
 
             # Return to be written to file
-            yield clusters, cluster_stats
+            yield cm_chunk, ci_chunk, index_chunk, cluster_stats
     except KeyboardInterrupt:
         # The finally block is executed always, but the KeyboardInterrupt needs to be reraised to be handled by parent
         raise KeyboardInterrupt
@@ -96,12 +97,12 @@ def cluster_worker(inputs, results, settings):
 
         if hits is None:
             # Signal end
-            results.put((None, None))
+            results.put((None, None, None, None))
         else:
-            clusters, cluster_stats = find_cluster_matches(settings, hits, start_idx)
+            cm_chunk, ci_chunk, index_chunk, cluster_stats = find_cluster_matches(settings, hits, start_idx)
 
             # Put results on result queue
-            results.put((clusters, cluster_stats))
+            results.put((cm_chunk, ci_chunk, index_chunk, cluster_stats))
 
 
 def find_cluster_matches(settings, hits, hits_start):
@@ -136,7 +137,9 @@ def find_cluster_matches(settings, hits, hits_start):
     matches = np.logical_and.reduce((match_c, match_x, match_y, match_t))
 
     # We have to build the cluster matrices already here, and resize later
-    clusters = np.zeros((len(hits), 16), dtype='int64')
+    index_chunk = np.zeros((len(hits), 16), dtype='int64')
+    ci_chunk = np.zeros(len(hits), dtype=dt_ci)
+    cm_chunk = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
     cluster_stats = list()
     c = 0
 
@@ -161,11 +164,21 @@ def find_cluster_matches(settings, hits, hits_start):
 
         # Only use clean clusters
         if len(cluster) > 0 and clean_cluster(cluster, settings):
-            # Find the indices and increase with the outside hit index
-            cluster_indices = np.where(select)[0] + hits_start
+            try:
+                ci, cm = build_cluster(cluster, settings)
+                ci_chunk[c] = ci
+                cm_chunk[c] = cm
+            except ClusterSizeExceeded:
+                logger.warning("Cluster exceeded max cluster size "
+                               "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
+                pass
 
-            # Fill up the cluster with zeros
-            clusters[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices))))
+            if settings.store_cluster_indices:
+                # Find the indices and increase with the outside hit index
+                cluster_indices = np.where(select)[0] + hits_start
+
+                # Fill up the cluster with zeros
+                index_chunk[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices))))
 
             c += 1
 
@@ -175,9 +188,11 @@ def find_cluster_matches(settings, hits, hits_start):
             cluster_stats.append(stats)
 
     # We made the cluster_info and cluster_matrix too big, resize to actual size
-    clusters = np.resize(clusters, (c, 16))
+    index_chunk = np.resize(index_chunk, (c, 16))
+    ci_chunk = np.resize(ci_chunk, c)
+    cm_chunk = np.resize(cm_chunk, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
 
-    return clusters, cluster_stats
+    return cm_chunk, ci_chunk, index_chunk, cluster_stats
 
 
 # Clean clusters based on their summed ToT and cluster size
@@ -196,6 +211,7 @@ def clean_cluster(c, settings):
 def build_cluster(c, settings):
     m_size = settings.cluster_matrix_size
     ci = np.zeros(1, dtype=dt_ci)
+    cluster = np.zeros((2, m_size, m_size), dt_clusters)
 
     # Base cTOA value
     min_ctoa = min(c['cToA'])
@@ -205,6 +221,21 @@ def build_cluster(c, settings):
     min_x = min(c['x'])
     min_y = min(c['y'])
 
+    c['x'] = c['x'] - min_x
+    c['y'] = c['y'] - min_y
+
+    rows = c['x']
+    cols = c['y']
+    tot = c['ToT']
+    toa = c['cToA']
+
+    try:
+        # TODO: We're throwing away NaN information here of pixels that have not been hit, but this function is fast!
+        cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
+        cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
+    except ValueError:
+        raise ClusterSizeExceeded
+
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
     ci['x'] = min_x
@@ -212,7 +243,7 @@ def build_cluster(c, settings):
     ci['TSPIDR'] = c[0]['TSPIDR']
     ci['cToA'] = min_ctoa
 
-    return ci
+    return ci, cluster
 
 
 class ClusterSizeExceeded(Exception):

@@ -2,8 +2,6 @@ import logging
 import multiprocessing
 import time
 import random
-
-import scipy.sparse
 from scipy import ndimage
 
 import tpx3format
@@ -19,18 +17,18 @@ tqdm.monitor_interval = 0
 logger = logging.getLogger('root')
 
 
-def localise_events(cluster_index, hits, method):
-    logger.info("Started event localization on %d events using method %s" % (len(cluster_index), method))
+def localise_events(cluster_matrix, cluster_info, method):
+    logger.info("Started event localization on %d events using method %s" % (len(cluster_info), method))
     begin = time.time()
 
-    events = np.empty(len(cluster_index), dtype=dt_event)
+    events = np.empty(len(cluster_info), dtype=dt_event)
 
     if method == "centroid":
-        events = split_calculation(cluster_index, hits, events, calculate_centroid)
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_centroid)
     elif method == "random":
-        events = split_calculation(cluster_index, hits, events, calculate_random)
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
     elif method == "highest_toa":
-        events = split_calculation(cluster_index, hits, events, calculate_toa)
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_toa)
     elif method == "cnn":
         events = cnn(cluster_matrix, cluster_info, events, lib.config.settings.event_cnn_tot_only)
     else:
@@ -39,40 +37,38 @@ def localise_events(cluster_index, hits, method):
     time_taken = time.time() - begin
 
     logger.info(
-        "Finished event localization in %d seconds ( %d events/s )" % (time_taken, len(cluster_index) / time_taken))
+        "Finished event localization in %d seconds ( %d events/s )" % (time_taken, len(cluster_info) / time_taken))
 
     return events
 
 
-def split_calculation(cluster_index, hits, events, method):
+def split_calculation(cluster_matrix, cluster_info, events, method):
     # Setup pool
     pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
     results = {}
 
     # Progress bar
-    progress_bar = tqdm(total=len(cluster_index), unit="clusters", smoothing=0.1, unit_scale=True)
+    progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
 
     # First split clusters in chunks
     chunk_size = lib.config.settings.event_chunk_size
-    if chunk_size > len(cluster_index):
+    if chunk_size > len(cluster_info):
         logger.warning("Cluster chunk size is larger than amount of events")
-        chunk_size = len(cluster_index)
+        chunk_size = len(cluster_info)
 
     start = 0
     r = 0
-    while start < len(cluster_index):
+    while start < len(cluster_info):
         end = start + chunk_size
 
-        if end > len(cluster_index):
-            end = len(cluster_index)
+        if end > len(cluster_info):
+            end = len(cluster_info)
 
         # This reads the clusters chunk wise.
-        ci_chunk = cluster_index[start:end]
+        cm_chunk = cluster_matrix[start:end]
+        ci_chunk = cluster_info[start:end]
 
-        # Reads hits chunk
-        hits_chunk = hits[np.min(ci_chunk):np.max(ci_chunk) + 1]
-
-        results[r] = pool.apply_async(method, args=([ci_chunk, hits_chunk, np.min(ci_chunk)]))
+        results[r] = pool.apply_async(method, args=([cm_chunk, ci_chunk]))
         start = end
         r += 1
 
@@ -93,30 +89,29 @@ def split_calculation(cluster_index, hits, events, method):
     return events
 
 
-def calculate_centroid(cluster_index, hits, hits_offset):
-    events = np.empty(len(cluster_index), dtype=dt_event)
+def calculate_centroid(cluster_matrix, cluster_info):
+    events = np.empty(len(cluster_info), dtype=dt_event)
 
     # Raise runtime warnings, instead of printing them
     numpy.seterr(all='raise')
 
-    for idx, c_idx in enumerate(cluster_index):
-
-        # Get cluster and base event
-        cluster, event = build_cluster(c_idx, hits, hits_offset)
-
+    for idx, cluster in enumerate(cluster_matrix):
         # Center of mass of ToT cluster
         try:
             x, y = ndimage.measurements.center_of_mass(cluster[0])
         except FloatingPointError:
-            logger.warning("Could not calculate center of mass: empty cluster. Event: %s" % event)
+            logger.warning("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
             x, y = 0, 0
+
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
 
         # The center_of_mass function considers the coordinate of the pixel as the origin. Shift this to the middle
         # of the pixel by adding 0.5
-        event['x'] = event['x'] + x + 0.5
-        event['y'] = event['y'] + y + 0.5
+        events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5
+        events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5
 
-        events[idx] = event
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
 
     return events
 
@@ -216,41 +211,11 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
 
     # Check for events outside matrix shape, and delete those
     ind_del = (events['x'] > shape) | (events['y'] > shape)
-    indeces = np.arange(len(events))
-    events = np.delete(events, indeces[ind_del], axis=0)
+    indices = np.arange(len(events))
+    events = np.delete(events, indices[ind_del], axis=0)
     deleted = np.count_nonzero(ind_del)
 
     if deleted > 0:
         logger.warning('Removed %d events found outside image matrix shape (%d).' % (deleted, shape))
 
     return events
-
-
-def build_cluster(c_idx, hits, hits_offset):
-    # Load cluster_hits from hits
-    cluster_i = c_idx[c_idx > 0]
-    cluster_hits = np.take(hits, cluster_i - hits_offset)
-
-    min_x = min(cluster_hits['x'])
-    min_y = min(cluster_hits['y'])
-    min_toa = min(cluster_hits['cToA'])
-
-    # Build rows, colums and data of ToT and ToA matrix
-    rows = cluster_hits['x'] - min_x
-    cols = cluster_hits['y'] - min_y
-    tot = cluster_hits['ToT']
-    toa = cluster_hits['cToA'] - min_toa
-
-    # Build cluster
-    cluster = np.zeros((2, 10, 10), dt_clusters)
-    cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(10, 10)).todense()
-    cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(10, 10)).todense()
-
-    event = np.zeros(1, dtype=dt_event)
-
-    event['cToA'] = min_toa
-    event['TSPIDR'] = cluster_hits[0]['TSPIDR']
-    event['x'] = min_x
-    event['y'] = min_y
-
-    return cluster, event

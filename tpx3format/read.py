@@ -191,8 +191,8 @@ def remove_cross_hits(hits):
 
     # Combine all found hits
     ind = ind_3x | ind_3y | ind_0x | ind_0y | ind_1x | ind_1y | ind_2x | ind_2y
-    indeces = np.arange(len(hits))
-    hits = np.delete(hits, indeces[ind], axis=0)
+    indices = np.arange(len(hits))
+    hits = np.delete(hits, indices[ind], axis=0)
 
     return hits
 

@@ -13,7 +13,7 @@ dt_hit = numpy.dtype([
 ])
 HITS_CHUNK_SIZE = 10000000
 
-# Cluster info key indeces
+# Cluster info key indices
 dt_ci = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.uint16),
@@ -25,7 +25,7 @@ dt_clusters = 'uint16'
 
 CLUSTER_CHUNK_SIZE = 100000
 
-# Event matrix key indeces
+# Event matrix key indices
 dt_event = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.float64),

@@ -61,11 +61,17 @@ def main():
         io.store_freq_tot(freq_tot)
 
     # Clusters ###
-    cluster_index = None
+    cluster_matrix = None
+    cluster_info = None
     cluster_stats = []
     if settings.C:
-        for ci_chunk, stats_chunk in clusters.find_clusters(hits):
-            io.write_cluster_index_chunk(ci_chunk)
+        for cm_chunk, ci_chunk, index_chunk, stats_chunk in clusters.find_clusters(hits):
+            io.write_cluster_chunk(ci_chunk, cm_chunk)
+
+            # if requested store also cluster_indices
+            if settings.store_cluster_indices:
+                io.write_cluster_index_chunk(index_chunk)
+
             cluster_stats.extend(stats_chunk)
 
         # Store clusters and cluster stats, we may delete it later
@@ -73,11 +79,10 @@ def main():
                           settings.cluster_max_size, settings.cluster_min_size)
 
         # Read clusters from just written data, not loaded in memory
-        cluster_index = io.read_clusters(settings.output)
+        cluster_matrix, cluster_info = io.read_clusters(settings.output)
     elif settings.clusters:
         try:
-            cluster_index = io.read_clusters(settings.clusters)
-            hits = io.read_hits(settings.clusters)
+            cluster_matrix, cluster_info = io.read_clusters(settings.clusters)
         except lib.IOException as e:
             logger.error(str(e))
             return 1
@@ -85,7 +90,7 @@ def main():
     # Events ###
     if settings.E:
         # TODO: This writes all events at once, and may cause memory issues
-        e = events.localise_events(cluster_index, hits, settings.algorithm)
+        e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
 
         if settings.store_events:
             io.store_events(e, settings.algorithm, settings.event_cnn_model)

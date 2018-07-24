@@ -82,6 +82,9 @@ def parse_config(argv=None):
     output_group.add_argument("--overwrite", action='store_true', help='Overwrite existing HDF5 file')
     output_group.add_argument("--store_hits", action='store_true', help="Store /hits in output file")
     output_group.add_argument("--store_clusters", action='store_true', help="Store /clusters in output file")
+    output_group.add_argument("--store_cluster_indices", action='store_true', help="Store /cluster_index in output "
+                                                                                   "file (for determining Delta ToA "
+                                                                                   "correction)")
     output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
 
     # Misc options

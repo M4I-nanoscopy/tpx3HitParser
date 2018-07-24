@@ -94,8 +94,29 @@ class io:
 
             clusters_f[old:] = clusters
 
+    def write_cluster_chunk(self, ci, cm):
+        if 'cluster_info' not in self.write:
+            cms = lib.config.settings.cluster_matrix_size
+            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
+                                      chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
+            self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype=constants.dt_clusters,
+                                      maxshape=(None, 2, cms, cms),
+                                      chunks=(constants.CLUSTER_CHUNK_SIZE, 2, cms, cms), data=cm)
+        else:
+            ci_f = self.write['cluster_info']
+            cm_f = self.write['clusters']
+
+            old = len(ci_f)
+
+            ci_f.resize(old + len(ci), 0)
+            cm_f.resize(old + len(cm), 0)
+
+            ci_f[old:] = ci
+            cm_f[old:] = cm
+
     def store_clusters(self, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
-        self.write_base_attributes('cluster_index')
+        self.write_base_attributes('cluster_info')
+        self.write_base_attributes('clusters')
 
         # Store cluster_stats
         self.write.create_dataset('cluster_stats', shape=(len(cluster_stats), 2), dtype='uint16', data=cluster_stats)
@@ -141,10 +162,10 @@ class io:
     def read_clusters(self, file_name):
         f = self.read_h5(file_name)
 
-        if 'cluster_index' not in f:
-            raise IOException("File %s does not have a /cluster_index dataset" % file_name)
+        if 'clusters' not in f:
+            raise IOException("File %s does not have a /clusters dataset" % file_name)
 
-        return f['cluster_index']
+        return f['clusters'], f['cluster_info']
 
 
 class IOException(Exception):
