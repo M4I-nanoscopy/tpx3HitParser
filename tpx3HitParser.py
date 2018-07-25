@@ -90,10 +90,13 @@ def main():
     if settings.freq_toa:
         cluster_indices = None
 
+        # We need to read hits as well when using cluster indices. Maybe not pretty to read this here again, but alas
         if settings.C:
             cluster_indices = io.read_cluster_indices(settings.output)
+            hits = io.read_hits(settings.output)
         elif settings.clusters:
             cluster_indices = io.read_cluster_indices(settings.clusters)
+            hits = io.read_hits(settings.clusters)
 
         freq_toa = clusters.build_freq_toa(cluster_indices, hits)
         io.store_freq_toa(freq_toa)

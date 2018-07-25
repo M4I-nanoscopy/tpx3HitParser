@@ -7,6 +7,10 @@ logger = logging.getLogger('root')
 def build_freq_toa(cluster_index, hits):
     logger.info("Determine and store ToA frequency matrix")
 
+    # Load all data in memory. This may be a problem when limited by memory
+    hits = hits[()]
+    cluster_index = cluster_index[()]
+
     # Progress bar
     progress_bar = tqdm(total=len(cluster_index), unit="clusters", smoothing=0.5, unit_scale=True)
 
