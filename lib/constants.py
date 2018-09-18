@@ -32,6 +32,7 @@ dt_event = numpy.dtype([
     ('y', numpy.float64),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16),
+    ('sumToT', numpy.uint16)
 ])
 
 # Control events

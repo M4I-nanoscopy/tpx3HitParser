@@ -112,6 +112,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+        events[idx]['sumToT'] = np.sum(cluster[0])
 
     return events
 
