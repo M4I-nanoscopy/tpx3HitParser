@@ -128,6 +128,9 @@ def parse_config(argv=None):
     if settings.spidr_stats and not (settings.raw or settings.hits):
         parser.error('Either --hits or --raw is required when requesting --spidr_stats')
 
+    if (settings.freq_tot or settings.freq_toa) and settings.hits_combine_chips:
+        parser.error('When building --freq_toa or --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+
 
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
 def str2bool(v):
