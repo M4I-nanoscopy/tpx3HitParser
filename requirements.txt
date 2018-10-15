@@ -1,9 +1,9 @@
 h5py>=2.8.0
-Keras>=2.1.1
-matplotlib>=2.2.0
-Pillow>=4.3.0
-tensorflow>=1.4.0
-scipy>=0.19.0
-numpy>=1.14.0
-tqdm>=4.0.0
+Keras>=2.2.0<=2.3
+matplotlib>=3.0.0,<4.0.0
+Pillow>=5.0.0,<6.00
+tensorflow>=1.4.0,<2.0
+scipy>=1.1.0,<1.2.0
+numpy>=1.14.0,<1.16
+tqdm>=4.0.0,<5.0
 configparser>=3.5
