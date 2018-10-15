@@ -89,7 +89,6 @@ def parse_config(argv=None):
 
     # Misc options
     misc_group = parser.add_argument_group('miscellaneous arguments')
-    misc_group.add_argument("--spidr_stats", action='store_true', help='Print SPIDR timer stats')
     misc_group.add_argument("--cluster_stats", action='store_true', help='Store cluster stats')
     misc_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
     misc_group.add_argument("--freq_toa", action='store_true', help="Parse and store delta-ToA frequency matrix")
@@ -124,9 +123,6 @@ def parse_config(argv=None):
 
     if settings.C and not (settings.raw or settings.hits):
         parser.error('Either --hits or --raw is required when parsing clusters (-C)')
-
-    if settings.spidr_stats and not (settings.raw or settings.hits):
-        parser.error('Either --hits or --raw is required when requesting --spidr_stats')
 
     if (settings.freq_tot or settings.freq_toa) and settings.hits_combine_chips:
         parser.error('When building --freq_toa or --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')

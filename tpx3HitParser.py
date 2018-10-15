@@ -2,7 +2,6 @@
 
 import sys
 import lib
-import frames
 import clusters
 import tpx3format
 import events
@@ -52,9 +51,6 @@ def main():
         except lib.IOException as e:
             logger.error(str(e))
             return 1
-
-    if settings.spidr_stats and hits is not None:
-        frames.spidr_time_stats(hits)
 
     if settings.freq_tot:
         freq_tot = tpx3format.build_freq_tot(hits)
