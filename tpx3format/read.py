@@ -243,21 +243,21 @@ def combine_chips(hits, hits_cross_extra_offset):
     offset = 256 + 2 * hits_cross_extra_offset
 
     # ChipId 0
-    ind = [hits['chipId'] == 0]
+    ind = tuple([hits['chipId'] == 0])
     hits['x'][ind] = hits['x'][ind] + offset
     hits['y'][ind] = 255 - hits['y'][ind] + offset
 
     # ChipId 1
-    ind = [hits['chipId'] == 1]
+    ind = tuple([hits['chipId'] == 1])
     hits['x'][ind] = 255 - hits['x'][ind] + offset
     # hits['y'][ind] = hits['y'][ind]
 
     # ChipId 2
-    ind = [hits['chipId'] == 2]
+    ind = tuple([hits['chipId'] == 2])
     hits['x'][ind] = 255 - hits['x'][ind]
     # hits['y'][ind] = hits['y'][ind]
 
-    ind = [hits['chipId'] == 3]
+    ind = tuple([hits['chipId'] == 3])
     # hits['x'][ind] = hits['x'][ind]
     hits['y'][ind] = 255 - hits['y'][ind] + offset
 
