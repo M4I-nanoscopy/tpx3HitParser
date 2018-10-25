@@ -29,6 +29,8 @@ def localise_events(cluster_matrix, cluster_info, method):
         events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
     elif method == "highest_toa":
         events = split_calculation(cluster_matrix, cluster_info, events, calculate_toa)
+    elif method == "highest_tot":
+        events = split_calculation(cluster_matrix, cluster_info, events, calculate_tot)
     elif method == "cnn":
         events = cnn(cluster_matrix, cluster_info, events, lib.config.settings.event_cnn_tot_only)
     else:
@@ -127,7 +129,7 @@ def calculate_random(cluster_matrix, cluster_info):
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
-        # The center_of_mass function considers the coordinate of the pixel as the origin. Shift this to the middle
+        # We considered the coordinate of the pixel as the origin. Shift this to the middle
         # of the pixel by adding 0.5
         events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5 + random.uniform(-0.5, 0.5)
         events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5 + random.uniform(-0.5, 0.5)
@@ -143,11 +145,31 @@ def calculate_toa(cluster_matrix, cluster_info):
 
     for idx, cluster in enumerate(cluster_matrix):
         i = np.argmax(cluster[1])
-        x,y = np.unravel_index(i,(10,10))
+        x, y = np.unravel_index(i, (10, 10))
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
-        # The center_of_mass function considers the coordinate of the pixel as the origin. Shift this to the middle
+        # We considered the coordinate of the pixel as the origin. Shift this to the middle
+        # of the pixel by adding 0.5
+        events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5
+        events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5
+
+        events[idx]['cToA'] = cluster_info[idx]['cToA']
+        events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+
+    return events
+
+
+def calculate_tot(cluster_matrix, cluster_info):
+    events = np.empty(len(cluster_info), dtype=dt_event)
+
+    for idx, cluster in enumerate(cluster_matrix):
+        i = np.argmax(cluster[0])
+        x, y = np.unravel_index(i, (10, 10))
+
+        events[idx]['chipId'] = cluster_info[idx]['chipId']
+
+        # We considered the coordinate of the pixel as the origin. Shift this to the middle
         # of the pixel by adding 0.5
         events[idx]['x'] = cluster_info[idx]['x'] + x + 0.5
         events[idx]['y'] = cluster_info[idx]['y'] + y + 0.5
@@ -169,11 +191,12 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
     # Set amount of cores to use for TensorFlow when using CPU only
     # Set to a limit of 1 GPU
     keras.backend.set_session(
-        keras.backend.tf.Session(config=keras.backend.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
-                                                                     inter_op_parallelism_threads=lib.config.settings.cores,
-                                                                     device_count={'GPU': 1}
-                                                                     )
-                                 )
+        keras.backend.tf.Session(
+            config=keras.backend.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
+                                                inter_op_parallelism_threads=lib.config.settings.cores,
+                                                device_count={'GPU': 1}
+                                                )
+            )
     )
 
     # Load model
@@ -192,8 +215,9 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
 
     # Check model shape and input shape
     if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
-        logger.error('Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size or use --event_cnn_tot_only?' % (
-            cluster_matrix.shape, model.layers[0].input_shape))
+        logger.error(
+            'Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size or use --event_cnn_tot_only?' % (
+                cluster_matrix.shape, model.layers[0].input_shape))
         raise Exception
 
     # Run CNN prediction
