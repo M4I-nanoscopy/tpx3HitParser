@@ -19,7 +19,8 @@ dt_ci = numpy.dtype([
     ('x', numpy.uint16),
     ('y', numpy.uint16),
     ('cToA', numpy.uint16),
-    ('TSPIDR', numpy.uint16)
+    ('TSPIDR', numpy.uint16),
+    ('sumToT', numpy.uint16)
 ])
 dt_clusters = 'uint16'
 
@@ -32,6 +33,7 @@ dt_event = numpy.dtype([
     ('y', numpy.float64),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16),
+    ('sumToT', numpy.uint16)
 ])
 
 # Control events

@@ -114,6 +114,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
@@ -136,6 +137,7 @@ def calculate_random(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
@@ -176,6 +178,7 @@ def calculate_tot(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
+        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
