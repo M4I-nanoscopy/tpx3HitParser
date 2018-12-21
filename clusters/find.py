@@ -242,6 +242,7 @@ def build_cluster(c, settings):
     ci['y'] = min_y
     ci['TSPIDR'] = c[0]['TSPIDR']
     ci['cToA'] = min_ctoa
+    ci['sumToT'] = np.sum(c['ToT'])
 
     return ci, cluster
 
