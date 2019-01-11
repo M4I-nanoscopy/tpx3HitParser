@@ -142,7 +142,7 @@ def read_raw(file_name, cores):
     if lib.config.settings.hits_remove_cross:
         # TODO: This is an indirect way of calculating this!
         diff = n_hits - parsed_hits
-        logger.info("Removed %d (%d percent) hits in chip border pixels or below ToT threshold (%d)"
+        logger.info("Removed %d (%.2f percent) hits in chip border pixels or below ToT threshold (%d)"
                     % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
 
 

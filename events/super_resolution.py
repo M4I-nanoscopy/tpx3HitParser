@@ -27,7 +27,22 @@ def subpixel_event_redistribution(events):
     border_x = float(np.median(sub_x, axis=0))
     border_y = float(np.median(sub_y, axis=0))
 
-    logger.info("Redistribution positions in x and y: %f02, %f02" % (border_x, border_y))
+    logger.info("Redistribution positions in x and y: %f, %f" % (border_x, border_y))
+
+    # Calculate how many events we're reassigning
+    if border_x > 0.5:
+        wrong_x = np.logical_and(0.5 < sub_x, sub_x < border_x)
+    else:
+        wrong_x = np.logical_and(0.5 > sub_x, sub_x > border_x)
+
+    if border_y > 0.5:
+        wrong_y = np.logical_and(0.5 < sub_y, sub_y < border_y)
+    else:
+        wrong_y = np.logical_and(0.5 > sub_y, sub_y > border_y)
+
+    wrong = np.logical_or(wrong_x, wrong_y).sum()
+
+    logger.info("Reassigning %d events (%.2f percent)" % (wrong, (float(wrong) / float(len(events)) * float(100))))
 
     # Redistribute
     sub_x[sub_x <= border_x] = 0.25
