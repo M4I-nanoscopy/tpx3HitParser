@@ -1,1 +1,2 @@
 from events.localise import localise_events
+from events.super_resolution import subpixel_event_redistribution

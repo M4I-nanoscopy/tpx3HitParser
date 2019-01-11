@@ -98,18 +98,29 @@ def main():
         io.store_freq_toa(freq_toa)
 
     # Events ###
+    e = None
     if settings.E:
         # TODO: This writes all events at once, and may cause memory issues
         e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
+    elif settings.events:
+        try:
+            e = io.read_events(settings.events)
+        except lib.IOException as e:
+            logger.error(str(e))
+            return 1
 
-        if settings.store_events:
-            io.store_events(e, settings.algorithm, settings.event_cnn_model)
+    # Super Resolution ###
+    if settings.S:
+        e = events.subpixel_event_redistribution(e)
 
     if settings.raw and not settings.store_hits:
         io.del_hits()
 
     if settings.C and not settings.store_clusters:
         io.del_clusters()
+
+    if settings.store_events:
+        io.store_events(e, settings.algorithm, settings.event_cnn_model)
 
     io.close_write()
 

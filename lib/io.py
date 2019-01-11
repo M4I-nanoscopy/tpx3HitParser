@@ -179,6 +179,14 @@ class io:
 
         return f['cluster_index']
 
+    def read_events(self, file_name):
+        f = self.read_h5(file_name)
+
+        if 'events' not in f:
+            raise IOException("File %s does not have a /events dataset" % file_name)
+
+        return f['events']
+
 
 class IOException(Exception):
     pass

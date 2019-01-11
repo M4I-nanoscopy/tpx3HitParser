@@ -70,11 +70,13 @@ def parse_config(argv=None):
     input_group_excl.add_argument("--raw", metavar='FILE', help="Read raw .tpx3")
     input_group_excl.add_argument("--hits", metavar='FILE', help="Read .h5 file containing /hits")
     input_group_excl.add_argument("--clusters", metavar='FILE', help="Read .h5 file containing /clusters")
+    input_group_excl.add_argument("--events", metavar='FILE', help="Read .h5 file containing /events")
 
     # Parse options
     parse_group = parser.add_argument_group('parse arguments')
     parse_group.add_argument("-C", action='store_true', help="Parse clusters")
     parse_group.add_argument("-E", action='store_true', help="Parse events")
+    parse_group.add_argument("-S", action='store_true', help="Parse super resolution events")
 
     # Output file arguments
     output_group = parser.add_argument_group('output arguments')
