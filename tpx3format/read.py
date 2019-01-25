@@ -335,7 +335,12 @@ def parse_data_package(f, pos, tot_correction, toa_correction, tot_threshold):
 
     # Read pixels as unsigned longs. pos[1] contains number of bytes per position. Unsigned long is 8 bytes
     struct_fmt = "<{}Q".format(pos[1] // 8)
-    pixels = struct.unpack(struct_fmt, b)
+
+    try:
+        pixels = struct.unpack(struct_fmt, b)
+    except struct.error as e:
+        logger.error('Failed reading data data package at position %d of file (error: %s)' % (pos[0], str(e)))
+        return
 
     time = pixels[0] & 0xffff
 
