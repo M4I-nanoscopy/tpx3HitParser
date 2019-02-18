@@ -9,9 +9,16 @@ cd tpx3HitParser
 
 Recommended way is to use a Python virtualenv. But this is optional.
 
+Python 2.7 (not recommended)
 ```
-virtualenv tpx3
-source tpx3/bin/activate
+virtualenv tpx3-py27
+source tpx3-py27/bin/activate
+```
+
+Python 3
+```
+python3 -m venv tpx3-py3
+source tpx3-py3/bin/activate
 ```
 
 Install Python dependencies
