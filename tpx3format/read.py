@@ -23,9 +23,8 @@ def read_raw(file_name, cores):
     max_positions = 500
     positions = np.empty((max_positions, 3), dtype='int64')
 
-    # Check if we have a loadable ToT and ToA correction file
+    # Check if we have a loadable ToT correction file
     check_tot_correction(lib.config.settings.hits_tot_correct_file)
-    check_toa_correction(lib.config.settings.hits_toa_correct_file)
 
     # Allocate processing processes
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=1000)
@@ -177,36 +176,6 @@ def read_tot_correction(correct_file):
     return data[()]
 
 
-def check_toa_correction(correct_file):
-    if correct_file == "0":
-        # No ToA correction requested
-        return True
-
-    if not os.path.exists(correct_file):
-        raise Exception("ToA correction file (%s) does not exists" % correct_file)
-
-    f = h5py.File(correct_file, 'r')
-
-    if 'toa_correction' not in f:
-        raise Exception("ToA correction file does not contain a toa_correction matrix" % correct_file)
-
-    data = f['toa_correction']
-
-    logger.info("Found ToA correction file that was created on %s" % data.attrs['creation_date'])
-
-    return True
-
-
-def read_toa_correction(correct_file):
-    if correct_file == "0":
-        # No ToA correction requested
-        return None
-
-    f = h5py.File(correct_file, 'r')
-    data = f['toa_correction']
-
-    return data[()]
-
 
 def remove_cross_hits(hits):
     # Maybe not the cleanest way to do this, but it's fast
@@ -304,12 +273,9 @@ def parse_data_packages(positions, file_name, settings):
     # Load ToT correction matrix
     tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
-    # Load ToA correction matrix
-    toa_correction = read_toa_correction(settings.hits_toa_correct_file)
-
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, toa_correction, settings.hits_tot_threshold):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -329,7 +295,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction, toa_correction, tot_threshold):
+def parse_data_package(f, pos, tot_correction, tot_threshold):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -364,16 +330,10 @@ def parse_data_package(f, pos, tot_correction, toa_correction, tot_threshold):
             else:
                 ToT_correct = ToT
 
-            # Apply ToA correction matrix, when requested
-            if toa_correction is not None:
-                ToA_correct = int(CToA) + toa_correction.item((int(CToA), int(y), int(x), pos[2]))
-            else:
-                ToA_correct = CToA
-
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, ToA_correct, time)
+                yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
