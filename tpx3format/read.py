@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+import random
 import struct
 
 import h5py
@@ -176,7 +177,6 @@ def read_tot_correction(correct_file):
     return data[()]
 
 
-
 def remove_cross_hits(hits):
     # Maybe not the cleanest way to do this, but it's fast
     ind_3x = (hits['chipId'] == 3) & (hits['x'] == 255)
@@ -197,6 +197,35 @@ def remove_cross_hits(hits):
     hits = np.delete(hits, indices[ind], axis=0)
 
     return hits
+
+
+def split_cross_hits(chip_id, x, y, ToT):
+    # Chip 0
+    if chip_id == 0 and x == 0:
+        # x = x - random.getrandbits(1)
+        x = x - random.randint(0, 1)
+    if chip_id == 0 and y == 255:
+        y = y + random.randint(0, 1)
+
+    # Chip 1
+    if chip_id == 1 and x == 255:
+        x = x + random.randint(0, 1)
+    if chip_id == 1 and y == 255:
+        y = y + random.randint(0, 1)
+
+    # Chip 2
+    if chip_id == 2 and x == 0:
+        x = x - random.randint(0, 1)
+    if chip_id == 2 and y == 255:
+        y = y + random.randint(0, 1)
+
+    # Chip 3
+    if chip_id == 3 and x == 255:
+        x = x + random.randint(0, 1)
+    if chip_id == 3 and y == 255:
+        y = y + random.randint(0, 1)
+
+    return chip_id, x, y, ToT
 
 
 def calculate_image_shape():
@@ -226,6 +255,7 @@ def combine_chips(hits, hits_cross_extra_offset):
     hits['x'][ind] = 255 - hits['x'][ind]
     # hits['y'][ind] = hits['y'][ind]
 
+    # ChipId 3
     ind = tuple([hits['chipId'] == 3])
     # hits['x'][ind] = hits['x'][ind]
     hits['y'][ind] = 255 - hits['y'][ind] + offset
@@ -333,6 +363,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
+                chip_id, x, y, ToT_correct = split_cross_hits(pos[2], int(x), y, ToT_correct)
                 yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
