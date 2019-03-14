@@ -200,32 +200,74 @@ def remove_cross_hits(hits):
 
 
 def split_cross_hits(chip_id, x, y, ToT):
+    positions = [0, 1, 2]
+    random.shuffle(positions)
+
     # Chip 0
     if chip_id == 0 and x == 0:
-        # x = x - random.getrandbits(1)
-        x = x - random.randint(0, 1)
-    if chip_id == 0 and y == 255:
-        y = y + random.randint(0, 1)
+        if 45 < ToT < 90:
+            # Split ToT in half, and emmit second hit
+            ToT = int(ToT / 2)
 
-    # Chip 1
-    if chip_id == 1 and x == 255:
-        x = x + random.randint(0, 1)
-    if chip_id == 1 and y == 255:
-        y = y + random.randint(0, 1)
+            yield chip_id, x - positions[0], y, ToT
+            yield chip_id, x - positions[1], y, ToT
+            # Also place low yield ToT hit
+            yield chip_id, x - positions[2], y, 5
+        elif ToT> 90:
+            # Split ToT in tree, and emmit third hit
+            ToT = int(ToT / 3)
 
-    # Chip 2
-    if chip_id == 2 and x == 0:
-        x = x - random.randint(0, 1)
-    if chip_id == 2 and y == 255:
-        y = y + random.randint(0, 1)
-
+            yield chip_id, x - positions[0], y, ToT
+            yield chip_id, x - positions[1], y, ToT
+            yield chip_id, x - positions[2], y, ToT
+        else:
+            yield chip_id, x - positions[0], y, ToT
+            # Also place low yield ToT hit
+            yield chip_id, x - positions[1], y, 5
+            yield chip_id, x - positions[2], y, 5
     # Chip 3
-    if chip_id == 3 and x == 255:
-        x = x + random.randint(0, 1)
-    if chip_id == 3 and y == 255:
-        y = y + random.randint(0, 1)
+    elif chip_id == 3 and x == 255:
+        if 45 < ToT < 90:
+            # Split ToT in half, and emmit second hit
+            ToT = int(ToT / 2)
 
-    return chip_id, x, y, ToT
+            yield chip_id, x + positions[0], y, ToT
+            yield chip_id, x + positions[1], y, ToT
+            # Also place low yield ToT hit
+            yield chip_id, x + positions[2], y, 5
+        elif ToT > 90:
+            # Split ToT in tree, and emmit third hit
+            ToT = int(ToT / 3)
+
+            yield chip_id, x + positions[0], y, ToT
+            yield chip_id, x + positions[1], y, ToT
+            yield chip_id, x + positions[2], y, ToT
+
+        else:
+            yield chip_id, x + positions[0], y, ToT
+            # Also place low yield ToT hit
+            yield chip_id, x + positions[1], y, 5
+            yield chip_id, x + positions[2], y, 5
+    else:
+        yield chip_id, x, y, ToT
+
+    # if chip_id == 0 and y == 255:
+    #     y = y + random.randint(0, 2)
+    # # Chip 1
+    # if chip_id == 1 and x == 255:
+    #     x = x + random.randint(0, 2)
+    # if chip_id == 1 and y == 255:
+    #     y = y + random.randint(0, 2)
+    #
+    # # Chip 2
+    # if chip_id == 2 and x == 0:
+    #     x = x - random.randint(0, 2)
+    # if chip_id == 2 and y == 255:
+    #     y = y + random.randint(0, 2)
+
+    # elif chip_id == 3 and y == 255:
+    #     y = y + random.randint(0, 2)
+
 
 
 def calculate_image_shape():
@@ -363,8 +405,8 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                chip_id, x, y, ToT_correct = split_cross_hits(pos[2], int(x), y, ToT_correct)
-                yield (pos[2], x, y, ToT_correct, CToA, time)
+                for chip_id, x, y, ToT_correct in split_cross_hits(pos[2], int(x), y, ToT_correct):
+                    yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
