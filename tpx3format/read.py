@@ -251,23 +251,31 @@ def split_cross_hits(chip_id, x, y, ToT):
     else:
         yield chip_id, x, y, ToT
 
-    # if chip_id == 0 and y == 255:
-    #     y = y + random.randint(0, 2)
-    # # Chip 1
-    # if chip_id == 1 and x == 255:
-    #     x = x + random.randint(0, 2)
-    # if chip_id == 1 and y == 255:
-    #     y = y + random.randint(0, 2)
-    #
+
+def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
+
+    # Chip 0
+    if chip_id == 0 and x == 0:
+        return 0
+    if chip_id == 0 and y == 255:
+        return 0
+    # Chip 1
+    if chip_id == 1 and x == 255:
+        return 0
+    if chip_id == 1 and y == 255:
+        return 0
     # # Chip 2
-    # if chip_id == 2 and x == 0:
-    #     x = x - random.randint(0, 2)
-    # if chip_id == 2 and y == 255:
-    #     y = y + random.randint(0, 2)
+    if chip_id == 2 and x == 0:
+        return 0
+    if chip_id == 2 and y == 255:
+        return 0
+    # Chip 3
+    if chip_id == 3 and y == 255:
+        return 0
+    if chip_id == 3 and x == 255:
+        return 0
 
-    # elif chip_id == 3 and y == 255:
-    #     y = y + random.randint(0, 2)
-
+    return tot_correction.item((ToT, y, x, chip_id))
 
 
 def calculate_image_shape():
@@ -398,7 +406,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
 
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
-                ToT_correct = int(ToT) + tot_correction.item((int(ToT), int(y), int(x), pos[2]))
+                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, int(ToT), int(y), int(x), pos[2])
             else:
                 ToT_correct = ToT
 
