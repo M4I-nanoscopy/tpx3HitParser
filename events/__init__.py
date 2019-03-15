@@ -1,2 +1,3 @@
 from events.localise import localise_events
 from events.super_resolution import subpixel_event_redistribution
+from events.chip_edge_correct import chip_edge_correct

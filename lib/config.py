@@ -76,7 +76,6 @@ def parse_config(argv=None):
     parse_group = parser.add_argument_group('parse arguments')
     parse_group.add_argument("-C", action='store_true', help="Parse clusters")
     parse_group.add_argument("-E", action='store_true', help="Parse events")
-    parse_group.add_argument("-S", action='store_true', help="Parse super resolution events")
 
     # Output file arguments
     output_group = parser.add_argument_group('output arguments')
@@ -88,6 +87,11 @@ def parse_config(argv=None):
                                                                                    "file (for determining Delta ToA "
                                                                                    "correction)")
     output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
+
+    # Correct options
+    correct_group = parser.add_argument_group('correct arguments')
+    correct_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
+    correct_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
 
     # Misc options
     misc_group = parser.add_argument_group('miscellaneous arguments')

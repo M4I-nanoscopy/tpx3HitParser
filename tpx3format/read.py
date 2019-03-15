@@ -405,8 +405,8 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                for chip_id, x, y, ToT_correct in split_cross_hits(pos[2], int(x), y, ToT_correct):
-                    yield (pos[2], x, y, ToT_correct, CToA, time)
+                #for chip_id, x, y, ToT_correct in split_cross_hits(pos[2], int(x), y, ToT_correct):
+                yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None

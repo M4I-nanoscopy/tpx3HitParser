@@ -109,9 +109,15 @@ def main():
             logger.error(str(e))
             return 1
 
-    # Super Resolution ###
-    if settings.S:
+    # Post event parsing corrections ###
+
+    # Super Resolution
+    if settings.correct_super_res:
         e = events.subpixel_event_redistribution(e)
+
+    # Correct chip edges
+    if settings.correct_chip_edge:
+        e = events.chip_edge_correct(e)
 
     if settings.raw and not settings.store_hits:
         io.del_hits()
