@@ -199,59 +199,6 @@ def remove_cross_hits(hits):
     return hits
 
 
-def split_cross_hits(chip_id, x, y, ToT):
-    positions = [0, 1, 2]
-    random.shuffle(positions)
-
-    # Chip 0
-    if chip_id == 0 and x == 0:
-        if 45 < ToT < 90:
-            # Split ToT in half, and emmit second hit
-            ToT = int(ToT / 2)
-
-            yield chip_id, x - positions[0], y, ToT
-            yield chip_id, x - positions[1], y, ToT
-            # Also place low yield ToT hit
-            yield chip_id, x - positions[2], y, 5
-        elif ToT> 90:
-            # Split ToT in tree, and emmit third hit
-            ToT = int(ToT / 3)
-
-            yield chip_id, x - positions[0], y, ToT
-            yield chip_id, x - positions[1], y, ToT
-            yield chip_id, x - positions[2], y, ToT
-        else:
-            yield chip_id, x - positions[0], y, ToT
-            # Also place low yield ToT hit
-            yield chip_id, x - positions[1], y, 5
-            yield chip_id, x - positions[2], y, 5
-    # Chip 3
-    elif chip_id == 3 and x == 255:
-        if 45 < ToT < 90:
-            # Split ToT in half, and emmit second hit
-            ToT = int(ToT / 2)
-
-            yield chip_id, x + positions[0], y, ToT
-            yield chip_id, x + positions[1], y, ToT
-            # Also place low yield ToT hit
-            yield chip_id, x + positions[2], y, 5
-        elif ToT > 90:
-            # Split ToT in tree, and emmit third hit
-            ToT = int(ToT / 3)
-
-            yield chip_id, x + positions[0], y, ToT
-            yield chip_id, x + positions[1], y, ToT
-            yield chip_id, x + positions[2], y, ToT
-
-        else:
-            yield chip_id, x + positions[0], y, ToT
-            # Also place low yield ToT hit
-            yield chip_id, x + positions[1], y, 5
-            yield chip_id, x + positions[2], y, 5
-    else:
-        yield chip_id, x, y, ToT
-
-
 def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
 
     # Chip 0
@@ -413,7 +360,6 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                #for chip_id, x, y, ToT_correct in split_cross_hits(pos[2], int(x), y, ToT_correct):
                 yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
