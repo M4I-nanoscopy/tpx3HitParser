@@ -41,6 +41,7 @@ def find_clusters(hits):
         lib.config.settings.cluster_chunk_size = len(hits)
 
     start = 0
+    chunks = 0
     while start < max_hits:
         end = start + lib.config.settings.cluster_chunk_size
 
@@ -50,23 +51,22 @@ def find_clusters(hits):
         # Build up queue of input
         inputs.put((hits[start:end], start))
 
-        start = end
+        # Increase chunk counter
+        chunks += 1
 
-    # Signal end to works at end of queue
-    inputs.put((None, None))
+        start = end
 
     total_clusters = 0
     try:
         # Wait for result worker to finish
-        while True:
+        while chunks > 0:
             cm_chunk, ci_chunk, index_chunk, cluster_stats = results.get()
 
             # Update progress bar
             progress_bar.update(lib.config.settings.cluster_chunk_size)
 
-            # Stop on end signal
-            if cm_chunk is None:
-                break
+            # Decrease chunk counter
+            chunks -= 1
 
             total_clusters += len(cm_chunk)
 
@@ -95,14 +95,11 @@ def cluster_worker(inputs, results, settings):
     while True:
         hits, start_idx = inputs.get()
 
-        if hits is None:
-            # Signal end
-            results.put((None, None, None, None))
-        else:
-            cm_chunk, ci_chunk, index_chunk, cluster_stats = find_cluster_matches(settings, hits, start_idx)
+        # Process to clusters
+        cm_chunk, ci_chunk, index_chunk, cluster_stats = find_cluster_matches(settings, hits, start_idx)
 
-            # Put results on result queue
-            results.put((cm_chunk, ci_chunk, index_chunk, cluster_stats))
+        # Put results on result queue
+        results.put((cm_chunk, ci_chunk, index_chunk, cluster_stats))
 
 
 def find_cluster_matches(settings, hits, hits_start):
