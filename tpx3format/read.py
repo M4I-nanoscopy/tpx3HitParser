@@ -300,9 +300,12 @@ def parse_data_packages(positions, file_name, settings):
     # Load ToT correction matrix
     tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
+    c = h5py.File('/home/paul/tpx3/data/20190121/flat_field/ftoa_correct.h5', 'r')
+    ftoa_correct = c['ftoa_correct'][()]
+
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, ftoa_correct):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -322,7 +325,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction, tot_threshold):
+def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -349,7 +352,16 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             ToA = (pixel >> (16 + 14)) & 0x3fff
             ToT = (pixel >> (16 + 4)) & 0x3ff
             FToA = (pixel >> 16) & 0xf
+
+            # Apply ToT correction matrix, when requested
+            if ftoa_correction is not None:
+                fToA_correct = int(FToA)*4 + ftoa_correction.item(int(y))
+            else:
+                fToA_correct = FToA
+
             CToA = (ToA << 4) | (~FToA & 0xf)
+
+            CToA = CToA*4 + fToA_correct
 
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
@@ -360,7 +372,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time)
+                yield (pos[2], x, y, ToT_correct, CToA, time, int(fToA_correct), int(ToA))
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
