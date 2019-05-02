@@ -235,26 +235,27 @@ def remove_cross_hits(hits):
 
 def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
 
-    # Chip 0
-    if chip_id == 0 and x == 0:
-        return 0
-    if chip_id == 0 and y == 255:
-        return 0
-    # Chip 1
-    if chip_id == 1 and x == 255:
-        return 0
-    if chip_id == 1 and y == 255:
-        return 0
-    # # Chip 2
-    if chip_id == 2 and x == 0:
-        return 0
-    if chip_id == 2 and y == 255:
-        return 0
-    # Chip 3
-    if chip_id == 3 and y == 255:
-        return 0
-    if chip_id == 3 and x == 255:
-        return 0
+    # This commented code can be used to disable ToT correction of cross pixels
+    # # Chip 0
+    # if chip_id == 0 and x == 0:
+    #     return 0
+    # if chip_id == 0 and y == 255:
+    #     return 0
+    # # Chip 1
+    # if chip_id == 1 and x == 255:
+    #     return 0
+    # if chip_id == 1 and y == 255:
+    #     return 0
+    # # # Chip 2
+    # if chip_id == 2 and x == 0:
+    #     return 0
+    # if chip_id == 2 and y == 255:
+    #     return 0
+    # # Chip 3
+    # if chip_id == 3 and y == 255:
+    #     return 0
+    # if chip_id == 3 and x == 255:
+    #     return 0
 
     return tot_correction.item((ToT, y, x, chip_id))
 
