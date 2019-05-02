@@ -27,6 +27,9 @@ def read_raw(file_name, cores):
     # Check if we have a loadable ToT correction file
     check_tot_correction(lib.config.settings.hits_tot_correct_file)
 
+    # Check if we have a loadable fToA correction file
+    check_ftoa_correction(lib.config.settings.hits_ftoa_correct_file)
+
     # Allocate processing processes
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=1000)
 
@@ -177,6 +180,37 @@ def read_tot_correction(correct_file):
     return data[()]
 
 
+def check_ftoa_correction(correct_file):
+    if correct_file == "0":
+        # No fToA correction requested
+        return True
+
+    if not os.path.exists(correct_file):
+        raise Exception("fToA correction file (%s) does not exists" % correct_file)
+
+    f = h5py.File(correct_file, 'r')
+
+    if 'ftoa_correction' not in f:
+        raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
+
+    data = f['ftoa_correction']
+
+    logger.info("Found fToA correction file that was created on %s" % data.attrs['creation_date'])
+
+    return True
+
+
+def read_ftoa_correction(correct_file):
+    if correct_file == "0":
+        # No fToA correction requested
+        return None
+
+    f = h5py.File(correct_file, 'r')
+    data = f['ftoa_correction']
+
+    return data[()]
+
+
 def remove_cross_hits(hits):
     # Maybe not the cleanest way to do this, but it's fast
     ind_3x = (hits['chipId'] == 3) & (hits['x'] == 255)
@@ -300,12 +334,12 @@ def parse_data_packages(positions, file_name, settings):
     # Load ToT correction matrix
     tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
-    c = h5py.File('/home/paul/tpx3/data/20190121/flat_field/ftoa_correct.h5', 'r')
-    ftoa_correct = c['ftoa_correct'][()]
+    # Load fToA correction matrix
+    ftoa_correction = read_ftoa_correction(settings.hits_ftoa_correct_file)
 
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, ftoa_correct):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, ftoa_correction):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -341,7 +375,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
     time = pixels[0] & 0xffff
 
     if pixels[0] >> 60 == 0xb and pos[2] < 4:
-        for i, pixel in enumerate(pixels):
+        for pixel in pixels:
             dcol = (pixel & 0x0FE0000000000000) >> 52
             spix = (pixel & 0x001F800000000000) >> 45
             pix = (pixel & 0x0000700000000000) >> 44
@@ -353,11 +387,15 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
             ToT = (pixel >> (16 + 4)) & 0x3ff
             FToA = (pixel >> 16) & 0xf
 
-            # Apply ToT correction matrix, when requested
+            # Apply fToA correction matrix, when requested
             if ftoa_correction is not None:
-                fToA_correct = int(FToA)*4 + ftoa_correction.item(int(y))
+                factor = ftoa_correction.item(int(pos[2]), int(FToA), int(y))
+                if random.random() < factor:
+                    fToA_correct = int(FToA) - 1
+                else:
+                    fToA_correct = int(FToA)
             else:
-                fToA_correct = FToA
+                fToA_correct = int(FToA)
 
             CToA = (ToA << 4) | (~FToA & 0xf)
 

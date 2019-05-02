@@ -107,7 +107,7 @@ def parse_config(argv=None):
     c_group.add_argument("--hits_combine_chips",metavar='0/1', type=str2bool, help='Combine the chips to one matrix')
     c_group.add_argument("--hits_cross_extra_offset", metavar='N', type=int, help='Extra offset used for the cross pixels per chip when combining the chips')
     c_group.add_argument("--hits_tot_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
-    # c_group.add_argument("--hits_toa_correct_file", metavar='FILE', help='ToA correction file, or 0 for no correction')
+    c_group.add_argument("--hits_ftoa_correct_file", metavar='FILE', help='fToA correction file, or 0 for no correction')
     c_group.add_argument("--hits_tot_threshold", type=int, metavar='N', help='Below this ToT threshold hits are not stored')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
