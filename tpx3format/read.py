@@ -398,9 +398,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
             else:
                 fToA_correct = int(FToA)
 
-            CToA = (ToA << 4) | (~FToA & 0xf)
-
-            CToA = CToA*4 + fToA_correct
+            CToA = (ToA << 4) | (~fToA_correct & 0xf)
 
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
@@ -411,7 +409,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time, int(fToA_correct), int(ToA))
+                yield (pos[2], x, y, ToT_correct, CToA, time, int(fToA_correct))
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
