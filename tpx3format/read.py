@@ -389,12 +389,19 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, ftoa_correction):
             FToA = (pixel >> 16) & 0xf
 
             # Apply fToA correction matrix, when requested
-            if ftoa_correction is not None:
-                factor = ftoa_correction.item(int(pos[2]), int(FToA), int(y))
-                if random.random() < factor:
-                    fToA_correct = int(FToA) - 1
+            if ftoa_correction is not None and int(FToA) == 15:
+                f0 = ftoa_correction.item(int(pos[2]), 0, int(y))
+                f1 = ftoa_correction.item(int(pos[2]), 1, int(y))
+                r = random.random()
+                if r < f0:
+                    fToA_correct = 0
+                    ToA = ToA - 1
+                elif f0 < r < (f0 + f1):
+                    fToA_correct = 1
+                    ToA = ToA - 1
                 else:
                     fToA_correct = int(FToA)
+
             else:
                 fToA_correct = int(FToA)
 
