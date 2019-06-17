@@ -1,4 +1,6 @@
 import signal
+
+from sklearn.cluster import DBSCAN
 from tqdm import tqdm
 import lib
 import logging
@@ -106,61 +108,35 @@ def find_cluster_matches(settings, hits, hits_start):
     # TODO: Move this var to configuration options
     time_size = 50
 
-    # Recast to signed integers, as we need to subtract
-    # TODO: This casting causes a lot of extra memory to be used, can we do this better?
-    x = hits['x'].astype('int16')
-    y = hits['y'].astype('int16')
-    t = hits['cToA'].astype('int32')
-    c = hits['chipId'].astype('int8')
-
-    # Calculate for all events the difference in x, y, cTOA and chip with all other event
-    # This is a memory intensive step! We're creating 4 times a cluster_chunk_size * cluster_chunk_size sized matrix
-    diff_x = x.reshape(-1, 1) - x
-    diff_y = y.reshape(-1, 1) - y
-    diff_t = t.reshape(-1, 1) - t
-    diff_c = c.reshape(-1, 1) - c
-
-    # Look for events that are right next to our current pixel
-    match_x = np.logical_and(diff_x < 2, diff_x > -2)
-    match_y = np.logical_and(diff_y < 2, diff_y > -2)
-
-    # Look for events which are close in ToA
-    match_t = (np.absolute(diff_t) < time_size)
-
-    # Look for events from the same chip
-    match_c = (diff_c == 0)
-
-    # Combine these condition into one match matrix
-    matches = np.logical_and.reduce((match_c, match_x, match_y, match_t))
+    # Find clusters using DBSCAN
+    m = np.stack((hits['x'], hits['y'], (hits['cToA'] / time_size).astype(int)), axis=-1)
+    db = DBSCAN(eps=1, min_samples=1).fit(m)
+    n_clusters = np.max(db.labels_)
 
     # We have to build the cluster matrices already here, and resize later
-    index_chunk = np.zeros((len(hits), 16), dtype='int64')
-    ci_chunk = np.zeros(len(hits), dtype=dt_ci)
-    cm_chunk = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
+    if settings.store_cluster_indices:
+        index_chunk = np.zeros((n_clusters, 16), dtype='int64')
+
+    ci_chunk = np.zeros(n_clusters, dtype=dt_ci)
+    cm_chunk = np.zeros((n_clusters, 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
     cluster_stats = list()
     c = 0
 
+    # Which clusters were used
+    used = list()
+
     # Loop over all columns of matches, and handle event/cluster per column
-    for m in range(0, matches.shape[0]):
-        select = matches[:, m]
+    for m in db.labels_:
+        if m == -1:
+            continue
+        if m in used:
+            continue
 
-        # Select all the matches of the events of this initial event
-        selected = matches[select]
-
-        prev_len = -1
-        # Find all events that belong to this cluster, but are not directly connected to the event we started with
-        while prev_len != len(selected):
-            prev_len = len(selected)
-            select = np.any(selected.transpose(), axis=1)
-            selected = matches[select]
-
-        cluster = hits[select]
-
-        # Make sure the events we used are not being used a second time
-        matches[select] = False
+        used.append(m)
+        cluster = np.take(hits, np.where(db.labels_ == m))[0]
 
         # Only use clean clusters
-        if len(cluster) > 0 and clean_cluster(cluster, settings):
+        if clean_cluster(cluster, settings):
             try:
                 ci, cm = build_cluster(cluster, settings)
                 ci_chunk[c] = ci
@@ -172,7 +148,7 @@ def find_cluster_matches(settings, hits, hits_start):
 
             if settings.store_cluster_indices:
                 # Find the indices and increase with the outside hit index
-                cluster_indices = np.where(select)[0] + hits_start
+                cluster_indices = m
 
                 # Fill up the cluster with zeros
                 index_chunk[c] = np.append(cluster_indices, np.zeros((16 - len(cluster_indices))))
@@ -183,11 +159,6 @@ def find_cluster_matches(settings, hits, hits_start):
         if settings.cluster_stats is True and len(cluster) > 0:
             stats = [len(cluster), np.sum(cluster['ToT'])]
             cluster_stats.append(stats)
-
-    # We made the cluster_info and cluster_matrix too big, resize to actual size
-    index_chunk = np.resize(index_chunk, (c, 16))
-    ci_chunk = np.resize(ci_chunk, c)
-    cm_chunk = np.resize(cm_chunk, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
 
     return cm_chunk, ci_chunk, index_chunk, cluster_stats
 
