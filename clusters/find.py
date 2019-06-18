@@ -110,13 +110,11 @@ def find_cluster_matches(settings, hits, hits_start):
 
     # Find clusters using DBSCAN
     m = np.stack((hits['x'], hits['y'], (hits['cToA'] / time_size).astype(int)), axis=-1)
-    db = DBSCAN(eps=1, min_samples=1).fit(m)
-    n_clusters = np.max(db.labels_)
+    cluster_labels = DBSCAN(eps=1, min_samples=1, metric='euclidean').fit_predict(m)
+    n_clusters = np.max(cluster_labels)
 
-    # We have to build the cluster matrices already here, and resize later
-    if settings.store_cluster_indices:
-        index_chunk = np.zeros((n_clusters, 16), dtype='int64')
-
+    # Build the cluster matrices to hold the outcome
+    index_chunk = np.zeros((n_clusters, 16), dtype='int64')
     ci_chunk = np.zeros(n_clusters, dtype=dt_ci)
     cm_chunk = np.zeros((n_clusters, 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
     cluster_stats = list()
@@ -126,14 +124,12 @@ def find_cluster_matches(settings, hits, hits_start):
     used = list()
 
     # Loop over all columns of matches, and handle event/cluster per column
-    for m in db.labels_:
-        if m == -1:
-            continue
+    for m in cluster_labels:
         if m in used:
             continue
 
         used.append(m)
-        cluster = np.take(hits, np.where(db.labels_ == m))[0]
+        cluster = np.take(hits, np.where(cluster_labels == m))[0]
 
         # Only use clean clusters
         if clean_cluster(cluster, settings):
@@ -156,7 +152,7 @@ def find_cluster_matches(settings, hits, hits_start):
             c += 1
 
         # Build cluster stats if requested
-        if settings.cluster_stats is True and len(cluster) > 0:
+        if settings.cluster_stats:
             stats = [len(cluster), np.sum(cluster['ToT'])]
             cluster_stats.append(stats)
 
