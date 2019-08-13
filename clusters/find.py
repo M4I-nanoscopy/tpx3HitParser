@@ -165,7 +165,7 @@ def find_cluster_matches(settings, hits, hits_start):
                 ci, cm = build_cluster(cluster, settings)
                 ci_chunk[c] = ci
                 cm_chunk[c] = cm
-            except ClusterSizeExceeded:
+            except lib.ClusterSizeExceeded:
                 logger.warning("Cluster exceeded max cluster size "
                                "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
                 pass
@@ -231,7 +231,7 @@ def build_cluster(c, settings):
         cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
         cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
-        raise ClusterSizeExceeded
+        raise lib.ClusterSizeExceeded
 
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']
@@ -244,5 +244,3 @@ def build_cluster(c, settings):
     return ci, cluster
 
 
-class ClusterSizeExceeded(Exception):
-    pass
