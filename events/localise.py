@@ -203,12 +203,10 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
     )
 
     # Load model
-    package_directory = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(package_directory, 'cnn_models', lib.config.settings.event_cnn_model)
+    model_path = lib.config.settings.event_cnn_model
 
     if not os.path.exists(model_path):
-        logger.error('CNN model %s does not exist.' % model_path)
-        raise Exception('CNN model %s does not exist.' % model_path)
+        raise lib.UserConfigException('CNN model %s does not exist.' % model_path)
 
     model = load_model(model_path)
 

@@ -18,12 +18,12 @@ class io:
 
     def open_write(self, file_name, overwrite):
         if os.path.exists(file_name) and not overwrite:
-            raise IOException("Output file already exists and --overwrite not specified.")
+            raise lib.IOException("Output file already exists and --overwrite not specified.")
 
         try:
             self.write = h5py.File(file_name, 'w')
         except IOError as e:
-            raise IOException("Could not open file for writing: %s" % str(e))
+            raise lib.IOException("Could not open file for writing: %s" % str(e))
 
     def close_write(self):
         self.write.flush()
@@ -151,7 +151,7 @@ class io:
 
     def read_h5(self, file_name):
         if not os.path.exists(file_name):
-            raise IOException("File %s for reading does not exist" % file_name)
+            raise lib.IOException("File %s for reading does not exist" % file_name)
 
         return h5py.File(file_name, 'r')
 
@@ -159,7 +159,7 @@ class io:
         f = self.read_h5(file_name)
 
         if 'hits' not in f:
-            raise IOException("File %s does not have a /hits dataset" % file_name)
+            raise lib.IOException("File %s does not have a /hits dataset" % file_name)
 
         return f['hits']
 
@@ -167,7 +167,7 @@ class io:
         f = self.read_h5(file_name)
 
         if 'clusters' not in f:
-            raise IOException("File %s does not have a /clusters dataset" % file_name)
+            raise lib.IOException("File %s does not have a /clusters dataset" % file_name)
 
         return f['clusters'], f['cluster_info']
 
@@ -175,7 +175,7 @@ class io:
         f = self.read_h5(file_name)
 
         if 'cluster_index' not in f:
-            raise IOException("File %s does not have a /cluster_index dataset" % file_name)
+            raise lib.IOException("File %s does not have a /cluster_index dataset" % file_name)
 
         return f['cluster_index']
 
@@ -183,10 +183,7 @@ class io:
         f = self.read_h5(file_name)
 
         if 'events' not in f:
-            raise IOException("File %s does not have a /events dataset" % file_name)
+            raise lib.IOException("File %s does not have a /events dataset" % file_name)
 
         return f['events']
 
-
-class IOException(Exception):
-    pass

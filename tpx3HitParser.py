@@ -7,6 +7,7 @@ import tpx3format
 import events
 import logging
 
+logger = lib.setup_custom_logger('root', logging.INFO)
 
 def main():
     # Parse all command line arguments
@@ -15,10 +16,8 @@ def main():
 
     if settings.verbose:
         log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
+        logger.setLevel(log_level)
 
-    logger = lib.setup_custom_logger('root', log_level)
     io = lib.io()
 
     # Print config statements
@@ -136,5 +135,8 @@ def main():
 if __name__ == "__main__":
     try:
         sys.exit(main())
+    except lib.UserConfigException as e:
+        logger.error(str(e))
+        sys.exit(1)
     except KeyboardInterrupt:
         sys.exit(0)
