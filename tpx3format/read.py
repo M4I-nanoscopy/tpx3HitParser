@@ -360,7 +360,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time)
+                yield (pos[2], x, y, ToT_correct, CToA, time, FToA)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
