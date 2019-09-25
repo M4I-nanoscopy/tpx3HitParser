@@ -11,6 +11,8 @@ dt_hit = numpy.dtype([
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16),
     ('fToA', numpy.uint8),
+    ('spId', numpy.uint16),
+    ('pix', numpy.uint8)
 ])
 HITS_CHUNK_SIZE = 10000000
 

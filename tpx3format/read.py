@@ -342,6 +342,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             dcol = (pixel & 0x0FE0000000000000) >> 52
             spix = (pixel & 0x001F800000000000) >> 45
             pix = (pixel & 0x0000700000000000) >> 44
+            spId = int(dcol / 2) * 64 + int(spix / 4)
 
             x = dcol + pix / 4
             y = spix + (pix & 0x3)
@@ -360,7 +361,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time, FToA)
+                yield (pos[2], x, y, ToT_correct, CToA, time, FToA, spId, int(pix))
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
