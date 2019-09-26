@@ -225,6 +225,36 @@ def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
     return tot_correction.item((ToT, y, x, chip_id))
 
 
+def apply_toa_phase_correction(x, y, CToA):
+    # PHASE 2
+    if int(x % 4) == 2 or int(x % 4) == 3:
+        CToA = CToA - 8
+
+    x = int(x)
+
+    # PHASE 2 rail road
+    if x == 202 or x == 203 or x == 206:
+        CToA = CToA + 16
+    if x == 196 or x == 198 or x == 199 or x == 202 or x == 203:
+        CToA = CToA + 16
+
+    if x > 201:
+        CToA = CToA - 16
+
+    if x > 203:
+        CToA = CToA + 16
+
+    if x > 206:
+        CToA = CToA + 16
+
+    if x == 196:
+        CToA = CToA - 16
+
+    if x < 196:
+        CToA = CToA + 16
+
+    return CToA
+
 def calculate_image_shape():
     return 512 + 2 * lib.config.settings.hits_cross_extra_offset
 
@@ -302,7 +332,7 @@ def parse_data_packages(positions, file_name, settings):
 
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, settings.hits_toa_phase_correction):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -322,7 +352,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction, tot_threshold):
+def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -344,17 +374,20 @@ def parse_data_package(f, pos, tot_correction, tot_threshold):
             pix = (pixel & 0x0000700000000000) >> 44
             spId = int(dcol / 2) * 64 + int(spix / 4)
 
-            x = dcol + pix / 4
-            y = spix + (pix & 0x3)
+            x = int(dcol + pix / 4)
+            y = int(spix + (pix & 0x3))
 
             ToA = (pixel >> (16 + 14)) & 0x3fff
             ToT = (pixel >> (16 + 4)) & 0x3ff
             FToA = (pixel >> 16) & 0xf
             CToA = (ToA << 4) | (~FToA & 0xf)
 
+            if toa_phase_correction:
+                CToA = apply_toa_phase_correction(x, y, int(CToA))
+
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
-                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, int(ToT), int(y), int(x), pos[2])
+                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, int(ToT), y, x, pos[2])
             else:
                 ToT_correct = ToT
 
