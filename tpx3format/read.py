@@ -225,35 +225,35 @@ def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
     return tot_correction.item((ToT, y, x, chip_id))
 
 
-def apply_toa_phase_correction(x, y, CToA):
-    # PHASE 2
+def apply_toa_railroad_correction_phase1(x, cToA, chipId):
+    # The railroad columns for pllConfig 30
+    if 193 < x < 206:
+        cToA = cToA - 16
+
+    # Chips 2, 3, 0 in Maastricht
+    if chipId in (2, 3, 0) and (x == 204 or x == 205):
+        cToA = cToA + 16
+
+    if chipId == 1 and (x == 186 or x == 187):
+        cToA = cToA - 16
+
+    return cToA
+
+
+def apply_toa_railroad_correction(x, cToA):
+    # The railroad columns for pllConfig 94
+    if x == 196 or x == 197 or x == 200 or x == 201 or x == 204 or x == 205:
+        cToA = cToA - 16
+
+    return cToA
+
+
+def apply_toa_phase_correction(x, cToA):
+    # PHASE 2 (pllConfig 94)
     if int(x % 4) == 2 or int(x % 4) == 3:
-        CToA = CToA - 8
+        cToA = cToA - 8
 
-    x = int(x)
-
-    # PHASE 2 rail road
-    if x == 202 or x == 203 or x == 206:
-        CToA = CToA + 16
-    if x == 196 or x == 198 or x == 199 or x == 202 or x == 203:
-        CToA = CToA + 16
-
-    if x > 201:
-        CToA = CToA - 16
-
-    if x > 203:
-        CToA = CToA + 16
-
-    if x > 206:
-        CToA = CToA + 16
-
-    if x == 196:
-        CToA = CToA - 16
-
-    if x < 196:
-        CToA = CToA + 16
-
-    return CToA
+    return cToA
 
 def calculate_image_shape():
     return 512 + 2 * lib.config.settings.hits_cross_extra_offset
@@ -372,29 +372,35 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             dcol = (pixel & 0x0FE0000000000000) >> 52
             spix = (pixel & 0x001F800000000000) >> 45
             pix = (pixel & 0x0000700000000000) >> 44
-            spId = int(dcol / 2) * 64 + int(spix / 4)
 
             x = int(dcol + pix / 4)
             y = int(spix + (pix & 0x3))
+            ToA = int((pixel >> (16 + 14)) & 0x3fff)
+            ToT = int((pixel >> (16 + 4)) & 0x3ff)
+            fToA = int((pixel >> 16) & 0xf)
+            spId = int(dcol / 2) * 64 + int(spix / 4)
 
-            ToA = (pixel >> (16 + 14)) & 0x3fff
-            ToT = (pixel >> (16 + 4)) & 0x3ff
-            FToA = (pixel >> 16) & 0xf
-            CToA = (ToA << 4) | (~FToA & 0xf)
+            # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
+            CToA = (ToA << 4) | (~fToA & 0xf)
 
             if toa_phase_correction:
-                CToA = apply_toa_phase_correction(x, y, int(CToA))
+                # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
+                CToA = CToA + 16
+
+                #CToA = apply_toa_phase_correction(x, CToA)
+                #CToA = apply_toa_railroad_correction(x, CToA)
+                CToA = apply_toa_railroad_correction_phase1(x, CToA, pos[2])
 
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
-                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, int(ToT), y, x, pos[2])
+                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, ToT, y, x, pos[2])
             else:
                 ToT_correct = ToT
 
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time, FToA, spId, int(pix))
+                yield (pos[2], x, y, ToT_correct, CToA, time, fToA, spId, int(pix))
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
