@@ -230,17 +230,18 @@ def apply_toa_railroad_correction_phase1(x, cToA, chipId):
     if 193 < x < 206:
         cToA = cToA - 16
 
-    # Chips 2, 3, 0 in Maastricht
+    # Chips 2, 3, 0 in Maastricht/Basel
     if chipId in (2, 3, 0) and (x == 204 or x == 205):
         cToA = cToA + 16
 
+    # Chips 1 in Maastricht/Basel
     if chipId == 1 and (x == 186 or x == 187):
         cToA = cToA - 16
 
     return cToA
 
 
-def apply_toa_railroad_correction(x, cToA):
+def apply_toa_railroad_correction_phase2(x, cToA):
     # The railroad columns for pllConfig 94
     if x == 196 or x == 197 or x == 200 or x == 201 or x == 204 or x == 205:
         cToA = cToA - 16
@@ -248,7 +249,7 @@ def apply_toa_railroad_correction(x, cToA):
     return cToA
 
 
-def apply_toa_phase_correction(x, cToA):
+def apply_toa_phase2_correction(x, cToA):
     # PHASE 2 (pllConfig 94)
     if int(x % 4) == 2 or int(x % 4) == 3:
         cToA = cToA - 8
@@ -387,8 +388,8 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
                 CToA = CToA + 16
 
-                #CToA = apply_toa_phase_correction(x, CToA)
-                #CToA = apply_toa_railroad_correction(x, CToA)
+                #CToA = apply_toa_phase2_correction(x, CToA)
+                #CToA = apply_toa_railroad_correction_phase2(x, CToA)
                 CToA = apply_toa_railroad_correction_phase1(x, CToA, pos[2])
 
             # Apply ToT correction matrix, when requested
