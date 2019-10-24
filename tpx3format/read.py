@@ -80,7 +80,7 @@ def read_raw(file_name, cores):
 
             # TODO: Use heartbeat packages in calculating time
 
-            # Heartbeat packages seem to be always followed by a 0x7145 or 0x7144 control package, and then possibly
+            # Heartbeat packages are always followed by a 0x7145 or 0x7144 control package, and then possibly
             # pixels. Continue to parse those pixels, but strip away the control package
             if size - (8*2) > 0:
                 positions[i] = [position+16, size-(8*2), chip_nr]
@@ -176,7 +176,7 @@ def parse_heartbeat_packet(pkg, size):
 def parse_tdc_packet(pkg):
     tdc_type = pkg >> 56
     counter = (pkg >> 44) & 0xfff
-    timestamp = (pkg >> 9) & 0xffffff # TODO: incorrect
+    timestamp = (pkg >> 9) & 0x3ffffffff
     stamp = (pkg >> 4) & 0xf
 
     logger.debug("TDC package. Type: 0x%04x. Counter: %d. Timestamp: %d. Stamp: %d" % (tdc_type, counter, timestamp, stamp))
