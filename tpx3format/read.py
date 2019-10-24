@@ -27,6 +27,9 @@ def read_raw(file_name, cores):
     # Check if we have a loadable ToT correction file
     check_tot_correction(lib.config.settings.hits_tot_correct_file)
 
+    # Check if we have a loadable fToA correction file
+    check_ftoa_correction(lib.config.settings.hits_ftoa_correct_file)
+
     # Allocate processing processes
     pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=1000)
 
@@ -228,6 +231,25 @@ def check_tot_correction(correct_file):
     return True
 
 
+def check_ftoa_correction(correct_file):
+    if correct_file == "0":
+        # No fToA correction requested
+        return True
+
+    if not os.path.exists(correct_file):
+        raise Exception("fToA correction file (%s) does not exists" % correct_file)
+
+    f = h5py.File(correct_file, 'r')
+
+    if 'corrector' not in f:
+        raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
+
+    #data = f['ftoa_correction']
+    #   logger.info("Found fToA correction file that was created on %s" % data.attrs['creation_date'])
+
+    return True
+
+
 def read_tot_correction(correct_file):
     if correct_file == "0":
         # No ToT correction requested
@@ -237,6 +259,20 @@ def read_tot_correction(correct_file):
     data = f['tot_correction']
 
     return data[()]
+
+
+def read_ftoa_correction(correct_file):
+    if correct_file == "0":
+        # No fToA correction requested
+        return None
+
+    f = h5py.File(correct_file, 'r')
+    data = {
+        'corrector': f['corrector'][()],
+        'classList': f['classList'][()]
+    }
+
+    return data
 
 
 def remove_cross_hits(hits):
@@ -364,9 +400,12 @@ def parse_data_packages(positions, file_name, settings):
     # Load ToT correction matrix
     tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
+    # Load fToA correction matrix
+    ftoa_correction = read_ftoa_correction(settings.hits_ftoa_correct_file)
+
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, settings.hits_toa_phase_correction):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, settings.hits_toa_phase_correction, ftoa_correction):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -386,7 +425,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction):
+def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction, ftoa_correction):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -416,6 +455,17 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
 
             # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
             CToA = (ToA << 4) | (~fToA & 0xf)
+
+            if ftoa_correction is not None:
+                sp_class = int(ftoa_correction['classList'][spId]) - 1
+
+                # 16, 8, 4, 12
+                length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
+                end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
+
+                fToA = random.randint(end_ftoa - length_ftoa, end_ftoa)
+
+            CToA = ToA * 160 - fToA
 
             if toa_phase_correction:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
