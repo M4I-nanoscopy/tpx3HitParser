@@ -61,32 +61,49 @@ def read_raw(file_name, cores):
 
         # Check for mode
         if mode != 0:
-            logger.warning("Found data packet with mode %d. Code has been developed for mode 0." % mode)
+            logger.error("Header packet with mode %d. Code has been developed for mode 0." % mode)
 
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 
-        # If this is a size 1 package, this could be control event package
-        control_event = False
-        if size / 8 == 1:
-            control_event = parse_control_packet(f, position)
+        # Read the first package of the data package to figure out its type
+        pkg = struct.unpack("<Q", f.read(8))[0]
+        pkg_type = pkg >> 60
+
+        # Parse the different package types
+        if pkg_type == 0x7:
+            control_event = parse_control_packet(pkg, size)
 
             if control_event:
                 control_events.append(control_event)
+        elif pkg_type == 0x4:
+            parse_heartbeat_packet(pkg, size)
 
-        # If it is a true pixel package, add it to the list to be parsed later
-        if not control_event:
+            # TODO: Use heartbeat packages in calculating time
+
+            # Heartbeat packages seem to be always followed by a 0x7145 or 0x7144 control package, and then possibly
+            # pixels. Continue to parse those pixels, but strip away the control package
+            if size - (8*2) > 0:
+                positions[i] = [position+16, size-(8*2), chip_nr]
+
+        elif pkg_type == 0x6:
+            logger.info("TDC timestamp at position %d len %d" % (position, size))
+            # TODO: Use TDC packages
+            # tdc = parse_tdc_packet(pkg)
+        elif pkg_type == 0xb:
             positions[i] = [position, size, chip_nr]
             i += 1
+        else:
+            logger.warning("Found packet with unknown type %d" % pkg_type)
 
-            # Chunk is ready to be processed, off load to sub process
-            if i == max_positions:
-                results[r] = pool.apply_async(parse_data_packages,
-                                              args=[np.copy(positions), file_name, lib.config.settings],
-                                              callback=pb_update)
-                r += 1
-                i = 0
+        # Check if chunk is ready to be processed, off load to sub process
+        if i == max_positions:
+            results[r] = pool.apply_async(parse_data_packages,
+                                          args=[np.copy(positions), file_name, lib.config.settings],
+                                          callback=pb_update)
+            r += 1
+            i = 0
 
-            n_hits += size // 8
+        n_hits += size // 8
 
         # Break early when max_hits has been reached
         if 0 < lib.config.settings.max_hits < n_hits:
@@ -144,6 +161,51 @@ def read_raw(file_name, cores):
         diff = n_hits - parsed_hits
         logger.info("Removed %d (%.2f percent) hits in chip border pixels or below ToT threshold (%d)"
                     % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
+
+
+def parse_heartbeat_packet(pkg, size):
+    if pkg >> 56 == 0x44:
+        lsb = (pkg >> 16) & 0xffffffff
+        logger.debug('Heartbeat (LSB). lsb %d. len %d' % (lsb, size))
+    if pkg >> 56 == 0x45:
+        msb = (pkg >> 16) & 0xff
+        logger.debug('Heartbeat (MSB). msb %d. len %d' % (msb, size))
+    return
+
+
+def parse_tdc_packet(pkg):
+    tdc_type = pkg >> 56
+    counter = (pkg >> 44) & 0xfff
+    timestamp = (pkg >> 9) & 0xffffff # TODO: incorrect
+    stamp = (pkg >> 4) & 0xf
+
+    logger.debug("TDC package. Type: 0x%04x. Counter: %d. Timestamp: %d. Stamp: %d" % (tdc_type, counter, timestamp, stamp))
+
+    return
+
+
+def parse_control_packet(pkg, size):
+    # Get SPIDR time and CHIP ID
+    time = pkg & 0xffff
+    chip_id = (pkg >> 16) & 0xffff
+
+    control_type = pkg >> 48
+
+    if size / 8 > 1:
+        logger.warning("Control data packet is followed by more data. This is unexpected")
+
+    if control_type == CONTROL_END_OF_COMMAND:
+        logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif control_type == CONTROL_END_OF_READOUT:
+        logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif control_type == CONTROL_END_OF_SEQUANTIAL_COMMAND:
+        logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    elif control_type == CONTROL_OTHER_CHIP_COMMAND:
+        logger.debug('OtherChipCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+    else:
+        logger.debug('Unknown control packet (0x%04x) on chip ID %04x at SPIDR_TIME %5d' % (pkg >> 48, chip_id, time))
+
+    return [control_type, chip_id, time]
 
 
 def check_tot_correction(correct_file):
@@ -291,35 +353,6 @@ def combine_chips(hits, hits_cross_extra_offset):
     # logger.debug("Combined chips to one matrix")
 
 
-def parse_control_packet(f, pos):
-    # Read 1 pixel packet
-    f.seek(pos)
-    b = f.read(8)
-
-    struct_fmt = "<Q"
-    pkg = struct.unpack(struct_fmt, b)[0]
-
-    # Get SPIDR time and CHIP ID
-    time = pkg & 0xffff
-    chip_id = (pkg >> 16) & 0xffff
-
-    if pkg >> 60 == 0xb:
-        # This is NOT a event packet, but a normal pixel packet with a length of 1
-        return False
-    elif pkg >> 48 == CONTROL_END_OF_COMMAND:
-        logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pkg >> 48 == CONTROL_END_OF_READOUT:
-        logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pkg >> 48 == CONTROL_END_OF_SEQUANTIAL_COMMAND:
-        logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    elif pkg >> 48 == CONTROL_OTHER_CHIP_COMMAND:
-        logger.debug('OtherChipCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
-    else:
-        logger.debug('Unknown control packet (0x%04x) on chip ID %04x at SPIDR_TIME %5d' % (pkg >> 48, chip_id, time))
-
-    return [pkg >> 48, chip_id, time]
-
-
 def parse_data_packages(positions, file_name, settings):
     # Reopen file in new process
     f = open(file_name, "rb")
@@ -363,7 +396,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
     try:
         pixels = struct.unpack(struct_fmt, b)
     except struct.error as e:
-        logger.error('Failed reading data data package at position %d of file (error: %s)' % (pos[0], str(e)))
+        logger.error('Failed reading data package at position %d of file (error: %s)' % (pos[0], str(e)))
         return
 
     time = pixels[0] & 0xffff
@@ -388,8 +421,8 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
                 CToA = CToA + 16
 
-                #CToA = apply_toa_phase2_correction(x, CToA)
-                #CToA = apply_toa_railroad_correction_phase2(x, CToA)
+                # CToA = apply_toa_phase2_correction(x, CToA)
+                # CToA = apply_toa_railroad_correction_phase2(x, CToA)
                 CToA = apply_toa_railroad_correction_phase1(x, CToA, pos[2])
 
             # Apply ToT correction matrix, when requested
