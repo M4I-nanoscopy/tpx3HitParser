@@ -463,9 +463,12 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
                 end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
 
-                fToA = random.randint(end_ftoa - length_ftoa, end_ftoa)
+                try:
+                    fToA = random.randint(end_ftoa - length_ftoa, end_ftoa - 1)
+                except ValueError:
+                    fToA = 0
 
-            CToA = ToA * 160 - fToA
+                CToA = ToA * 160 - fToA
 
             if toa_phase_correction:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
