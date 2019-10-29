@@ -103,9 +103,6 @@ def cluster_worker(inputs, results, settings):
 
 
 def find_cluster_matches(settings, hits, hits_start):
-    # TODO: Move this var to configuration options
-    time_size = 50
-
     # Recast to signed integers, as we need to subtract
     # TODO: This casting causes a lot of extra memory to be used, can we do this better?
     x = hits['x'].astype('int16')
@@ -125,7 +122,7 @@ def find_cluster_matches(settings, hits, hits_start):
     match_y = np.logical_and(diff_y < 2, diff_y > -2)
 
     # Look for events which are close in ToA
-    match_t = (np.absolute(diff_t) < time_size)
+    match_t = (np.absolute(diff_t) < settings.cluster_time_window)
 
     # Look for events from the same chip
     match_c = (diff_c == 0)

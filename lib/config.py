@@ -110,6 +110,7 @@ def parse_config(argv=None):
     c_group.add_argument("--hits_ftoa_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
     c_group.add_argument("--hits_toa_phase_correction", action='store_true', help='Apply phase 2 ToA correction')
     c_group.add_argument("--hits_tot_threshold", type=int, metavar='N', help='Below this ToT threshold hits are not stored')
+    c_group.add_argument("--cluster_time_window", type=int, metavar='N', help='Maximum time interval between individual hits to cluster them (in cToA values)')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
     c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )

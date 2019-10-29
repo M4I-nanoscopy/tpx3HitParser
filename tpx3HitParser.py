@@ -70,7 +70,7 @@ def main():
             cluster_stats.extend(stats_chunk)
 
         # Store clusters and cluster stats, we may delete it later
-        io.store_clusters(cluster_stats, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
+        io.store_clusters(cluster_stats, settings.cluster_time_window, settings.cluster_max_sum_tot, settings.cluster_min_sum_tot,
                           settings.cluster_max_size, settings.cluster_min_size)
 
         # Read clusters from just written data, not loaded in memory
