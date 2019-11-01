@@ -114,7 +114,7 @@ class io:
             ci_f[old:] = ci
             cm_f[old:] = cm
 
-    def store_clusters(self,cluster_time_window, cluster_stats, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
+    def store_clusters(self,cluster_stats, cluster_time_window, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
         self.write_base_attributes('cluster_info')
         self.write_base_attributes('clusters')
 
