@@ -218,8 +218,8 @@ def build_cluster(c, settings):
     c['x'] = c['x'] - min_x
     c['y'] = c['y'] - min_y
 
-    rows = c['x']
-    cols = c['y']
+    rows = c['y']
+    cols = c['x']
     tot = c['ToT']
     toa = c['cToA']
 
