@@ -470,6 +470,10 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
 
                 CToA = ToA * 160 - fToA
 
+                # cToA phase shift due to fToA pattern
+                #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
+                #CToA += shift
+
             if toa_phase_correction:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
                 CToA = CToA + 16
