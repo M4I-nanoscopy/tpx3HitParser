@@ -100,10 +100,10 @@ def calculate_centroid(cluster_matrix, cluster_info):
     for idx, cluster in enumerate(cluster_matrix):
         # Center of mass of ToT cluster
         try:
-            x, y = ndimage.measurements.center_of_mass(cluster[0])
+            y, x = ndimage.measurements.center_of_mass(cluster[0])
         except FloatingPointError:
             logger.warning("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
-            x, y = 0, 0
+            y, x = 0, 0
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
@@ -125,8 +125,8 @@ def calculate_random(cluster_matrix, cluster_info):
     for idx, cluster in enumerate(cluster_matrix):
         non_zeros = np.transpose(np.nonzero(cluster[0]))
         c = random.sample(non_zeros, 1)
-        x = c[0][0]
-        y = c[0][1]
+        y = c[0][0]
+        x = c[0][1]
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
@@ -147,7 +147,7 @@ def calculate_toa(cluster_matrix, cluster_info):
 
     for idx, cluster in enumerate(cluster_matrix):
         i = np.argmax(cluster[1])
-        x, y = np.unravel_index(i, (10, 10))
+        y, x = np.unravel_index(i, cluster[1].shape)
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
@@ -167,7 +167,7 @@ def calculate_tot(cluster_matrix, cluster_info):
 
     for idx, cluster in enumerate(cluster_matrix):
         i = np.argmax(cluster[0])
-        x, y = np.unravel_index(i, (10, 10))
+        y, x = np.unravel_index(i, cluster[0].shape)
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
@@ -199,7 +199,7 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
                                                 inter_op_parallelism_threads=lib.config.settings.cores,
                                                 device_count={'GPU': 1}
                                                 )
-            )
+        )
     )
 
     # Load model
@@ -229,8 +229,8 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
     events = cluster_info[()].astype(dt_event)
 
     # Add prediction offset from cluster origin
-    events['x'] = events['x'] + predictions[:, 0]
-    events['y'] = events['y'] + predictions[:, 1]
+    events['x'] = events['x'] + predictions[:, 1]
+    events['y'] = events['y'] + predictions[:, 0]
 
     shape = tpx3format.calculate_image_shape()
 
