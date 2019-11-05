@@ -127,6 +127,9 @@ def main():
     if settings.store_events:
         io.store_events(e, settings.algorithm, settings.event_cnn_model)
 
+    if settings.store_predictions:
+        io.store_predictions(events.calculate_predictions(e, cluster_info), settings.algorithm)
+
     io.close_write()
 
     return 0

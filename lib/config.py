@@ -87,6 +87,7 @@ def parse_config(argv=None):
                                                                                    "file (for determining Delta ToA "
                                                                                    "correction)")
     output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
+    output_group.add_argument("--store_predictions", action='store_true', help="Store /predictions in output file")
 
     # Correct options
     correct_group = parser.add_argument_group('correct arguments')

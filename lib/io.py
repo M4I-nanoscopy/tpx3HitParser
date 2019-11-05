@@ -150,6 +150,11 @@ class io:
         if algorithm == 'cnn':
             self.write['events'].attrs['cnn_model'] = cnn_model
 
+    def store_predictions(self, predictions, algorithm):
+        name = '/predictions/%s' % algorithm
+        self.write.create_dataset(name, data=predictions)
+        self.write_base_attributes(name)
+
     def read_h5(self, file_name):
         if not os.path.exists(file_name):
             raise lib.IOException("File %s for reading does not exist" % file_name)
