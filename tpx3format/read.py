@@ -455,7 +455,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             spId = int(dcol / 2) * 64 + int(spix / 4)
 
             # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
-            CToA = (ToA << 4) | (~fToA & 0xf)
+            #CToA = (ToA << 4) | (~fToA & 0xf)
 
             if ftoa_correction is not None:
                 # sp_class = int(ftoa_correction['classList'][spId]) - 1
@@ -468,7 +468,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 #     fToA = random.randint(end_ftoa - length_ftoa, end_ftoa - 1)
                 # except ValueError:
                 #     fToA = 0
-                CToA = CToA * 160 - fToA*10 - int(ftoa_correction[y, x] * 10)
+                CToA = ToA * 160 - fToA*10 + int(ftoa_correction[y, x] * 10)
 
                 #CToA = ToA * 160 - fToA
 
