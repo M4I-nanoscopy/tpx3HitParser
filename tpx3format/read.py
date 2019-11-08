@@ -241,7 +241,7 @@ def check_ftoa_correction(correct_file):
 
     f = h5py.File(correct_file, 'r')
 
-    if 'dctoa_shift' not in f:
+    if 'corrector' not in f:
         raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
 
     #data = f['ftoa_correction']
@@ -267,11 +267,11 @@ def read_ftoa_correction(correct_file):
         return None
 
     f = h5py.File(correct_file, 'r')
-    # data = {
-    #     'corrector': f['corrector'][()],
-    #     'classList': f['classList'][()]
-    # }
-    data = np.nan_to_num(f['dctoa_shift'])
+    data = {
+        'corrector': f['corrector'][()],
+        'classList': f['classList'][()],
+        'dctoa_shift' : f['dctoa_shift'][()]
+    }
 
     return data
 
@@ -458,23 +458,25 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             #CToA = (ToA << 4) | (~fToA & 0xf)
 
             if ftoa_correction is not None:
-                # sp_class = int(ftoa_correction['classList'][spId]) - 1
-                #
-                # # 16, 8, 4, 12
-                # length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
-                # end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
-                #
-                # try:
-                #     fToA = random.randint(end_ftoa - length_ftoa, end_ftoa - 1)
-                # except ValueError:
-                #     fToA = 0
-                CToA = ToA * 160 - fToA*10 + int(ftoa_correction[y, x] * 10)
+                sp_class = int(ftoa_correction['classList'][spId]) - 1
 
-                #CToA = ToA * 160 - fToA
+                # 16, 8, 4, 12
+                length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
+                end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
+
+                try:
+                    fToA = random.randint(end_ftoa - length_ftoa, end_ftoa - 1)
+                except ValueError:
+                    fToA = 0
+
+                CToA = ToA * 160 - fToA
+
+                # dCToA Shift
+                # CToA = ToA * 160 - fToA*10 - int(ftoa_correction['dctoa_shift'][y, x] * 10)
 
                 # cToA phase shift due to fToA pattern
-                #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
-                #CToA += shift
+                # shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
+                # CToA += shift
 
             if toa_phase_correction:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
