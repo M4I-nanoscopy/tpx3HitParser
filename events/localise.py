@@ -146,8 +146,13 @@ def calculate_toa(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     for idx, cluster in enumerate(cluster_matrix):
-        i = np.argmax(cluster[1])
-        y, x = np.unravel_index(i, cluster[1].shape)
+        maxes = np.argwhere(cluster[1] == np.max(cluster[1]))
+
+        if len(maxes) > 1:
+            i = np.random.randint(0, len(maxes) - 1)
+            y, x = maxes[i][0], maxes[i][1]
+        else:
+            y, x = maxes[0][0], maxes[0][1]
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
