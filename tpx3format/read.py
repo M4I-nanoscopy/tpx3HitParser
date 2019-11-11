@@ -461,15 +461,15 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 sp_class = int(ftoa_correction['classList'][spId]) - 1
 
                 # 16, 8, 4, 12
-                length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
-                end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
+                #length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
+                #end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
 
                 try:
-                    fToA = random.randint(end_ftoa - length_ftoa, end_ftoa - 1)
+                    fToA = random.randint(0, 15)
                 except ValueError:
                     fToA = 0
 
-                CToA = ToA * 160 - fToA
+                CToA = ToA * 16 - fToA
 
                 # dCToA Shift
                 # CToA = ToA * 160 - fToA*10 - int(ftoa_correction['dctoa_shift'][y, x] * 10)

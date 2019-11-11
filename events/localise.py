@@ -123,10 +123,9 @@ def calculate_random(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     for idx, cluster in enumerate(cluster_matrix):
-        non_zeros = np.transpose(np.nonzero(cluster[0]))
-        c = random.sample(non_zeros, 1)
-        y = c[0][0]
-        x = c[0][1]
+        nzy, nzx = np.nonzero(cluster[0])
+        i = np.random.randint(0, len(nzy) - 1)
+        y, x = nzy[i], nzx[i]
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
@@ -146,8 +145,24 @@ def calculate_toa(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     for idx, cluster in enumerate(cluster_matrix):
-        i = np.argmax(cluster[1])
-        y, x = np.unravel_index(i, cluster[1].shape)
+        if np.max(cluster[1]) == 0:
+            logger.debug("Could not calculate highest_toa: empty ToA cluster Picking random ToT pixel. Cluster_info: %s" % cluster_info[idx])
+
+            if np.max(cluster[0]) == 0:
+                logger.warning("ToT and ToA cluster empty. Giving up for this cluster. Cluster_info: %s" %cluster_info[idx])
+                continue
+
+            nzy, nzx = np.nonzero(cluster[0])
+            i = np.random.randint(0, len(nzy) - 1)
+            y, x = nzy[i], nzx[i]
+        else:
+            maxes = np.argwhere(cluster[1] == np.max(cluster[1]))
+
+            if len(maxes) > 1:
+                i = np.random.randint(0, len(maxes) - 1)
+                y, x = maxes[i][0], maxes[i][1]
+            else:
+                y, x = maxes[0][0], maxes[0][1]
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
