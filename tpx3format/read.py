@@ -270,7 +270,7 @@ def read_ftoa_correction(correct_file):
     data = {
         'corrector': f['corrector'][()],
         'classList': f['classList'][()],
-        'dctoa_shift' : f['dctoa_shift'][()]
+        'dctoa_shift' : np.nan_to_num(f['dctoa_shift'][()])
     }
 
     return data
