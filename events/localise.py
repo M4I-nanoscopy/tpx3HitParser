@@ -147,6 +147,11 @@ def calculate_toa(cluster_matrix, cluster_info):
     for idx, cluster in enumerate(cluster_matrix):
         if np.max(cluster[1]) == 0:
             logger.debug("Could not calculate highest_toa: empty ToA cluster Picking random ToT pixel. Cluster_info: %s" % cluster_info[idx])
+
+            if np.max(cluster[0]) == 0:
+                logger.warning("ToT and ToA cluster empty. Giving up for this cluster. Cluster_info: %s" %cluster_info[idx])
+                continue
+
             nzy, nzx = np.nonzero(cluster[0])
             i = np.random.randint(0, len(nzy) - 1)
             y, x = nzy[i], nzx[i]
