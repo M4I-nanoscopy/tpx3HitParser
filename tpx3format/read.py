@@ -241,7 +241,7 @@ def check_ftoa_correction(correct_file):
 
     f = h5py.File(correct_file, 'r')
 
-    if 'corrector' not in f:
+    if 'correction' not in f:
         raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
 
     #data = f['ftoa_correction']
@@ -268,8 +268,8 @@ def read_ftoa_correction(correct_file):
 
     f = h5py.File(correct_file, 'r')
     data = {
-        'corrector': f['corrector'][()],
-        'classList': f['classList'][()]
+        'correction': np.nan_to_num(f['correction'][()]),
+        #'classList': f['classList'][()]
     }
 
     return data
@@ -457,18 +457,18 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             CToA = (ToA << 4) | (~fToA & 0xf)
 
             if ftoa_correction is not None:
-                sp_class = int(ftoa_correction['classList'][spId]) - 1
+                # corr = int(ftoa_correction['classList'][spId]) - 1
 
                 # 16, 8, 4, 12
                 #length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
                 #end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
 
                 try:
-                    fToA = random.randint(0, 15)
-                except ValueError:
-                    fToA = 0
+                    shift = ftoa_correction['correction'][2][x-150][y-150]
+                except IndexError:
+                    shift = 0
 
-                CToA = ToA * 16 - fToA
+                CToA = ToA * 160 - fToA - shift
 
                 # cToA phase shift due to fToA pattern
                 #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
