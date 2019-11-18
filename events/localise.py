@@ -124,8 +124,15 @@ def calculate_random(cluster_matrix, cluster_info):
 
     for idx, cluster in enumerate(cluster_matrix):
         nzy, nzx = np.nonzero(cluster[0])
-        i = np.random.randint(0, len(nzy) - 1)
-        y, x = nzy[i], nzx[i]
+
+        if len(nzy) == 0:
+            logger.warning("Could not find random pixel: empty cluster?. Cluster_idx: %s" % idx)
+            continue
+        elif len(nzy) == 1:
+            y, x = nzy[0], nzx[0]
+        else:
+            i = np.random.randint(0, len(nzy) - 1)
+            y, x = nzy[i], nzx[i]
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
 
