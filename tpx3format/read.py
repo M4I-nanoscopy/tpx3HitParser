@@ -465,8 +465,8 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
 
                 # need to flip because the correction was done on the merged chips
                 corr = np.flip(ftoa_correction['correction'][0], axis=0)
-                if 60 > x - 156 > 0 and 60 > y - 100 > 0:
-                    shift = corr[x-156][y-100]
+                if 60 > x - 156 + 60 > 0 and 60 > y - 100 > 0:
+                    shift = corr[x-156 + 60][y-100]
                 else:
                     shift = 0
 
