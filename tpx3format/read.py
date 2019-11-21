@@ -323,7 +323,7 @@ def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
     return tot_correction.item((ToT, y, x, chip_id))
 
 
-def apply_toa_railroad_correction_phase1(x, cToA, chipId):
+def apply_toa_railroad_correction_phase1_um(x, cToA, chipId):
     # The railroad columns for pllConfig 30
     if 193 < x < 206:
         cToA = cToA - 16
@@ -334,6 +334,22 @@ def apply_toa_railroad_correction_phase1(x, cToA, chipId):
 
     # Chips 1 in Maastricht/Basel
     if chipId == 1 and (x == 186 or x == 187):
+        cToA = cToA - 16
+
+    return cToA
+
+
+def apply_toa_railroad_correction_phase1_basel(x, cToA, chipId):
+    # The railroad columns for pllConfig 30
+    if 193 < x < 206:
+        cToA = cToA - 16
+
+    # Chips 1, 3, 0 in Maastricht/Basel
+    if chipId in (3, 0) and (x == 204 or x == 205):
+        cToA = cToA + 16
+
+    # Chips 2
+    if chipId == 2 and (x == 186 or x == 187):
         cToA = cToA - 16
 
     return cToA
@@ -474,13 +490,17 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
                 #CToA += shift
 
-            if toa_phase_correction:
+            if toa_phase_correction > 0:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
                 CToA = CToA + 16
 
-                # CToA = apply_toa_phase2_correction(x, CToA)
-                # CToA = apply_toa_railroad_correction_phase2(x, CToA)
-                CToA = apply_toa_railroad_correction_phase1(x, CToA, pos[2])
+                if toa_phase_correction == 1:
+                    CToA = apply_toa_railroad_correction_phase1_um(x, CToA, pos[2])
+                elif toa_phase_correction == 2:
+                    CToA = apply_toa_railroad_correction_phase1_basel(x, CToA, pos[2])
+                elif toa_phase_correction == 3:
+                    CToA = apply_toa_phase2_correction(x, CToA)
+                    CToA = apply_toa_railroad_correction_phase2(x, CToA)
 
             # Apply ToT correction matrix, when requested
             if tot_correction is not None:
