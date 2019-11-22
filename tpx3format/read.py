@@ -241,10 +241,10 @@ def check_ftoa_correction(correct_file):
 
     f = h5py.File(correct_file, 'r')
 
-    if 'corrector' not in f:
+    if 'ftoa_correction' not in f:
         raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
 
-    #data = f['ftoa_correction']
+    # data = f['ftoa_correction']
     #   logger.info("Found fToA correction file that was created on %s" % data.attrs['creation_date'])
 
     return True
@@ -268,8 +268,7 @@ def read_ftoa_correction(correct_file):
 
     f = h5py.File(correct_file, 'r')
     data = {
-        'corrector': f['corrector'][()],
-        'classList': f['classList'][()]
+        'ftoa_correction': f['ftoa_correction'][()],
     }
 
     return data
@@ -473,22 +472,16 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             CToA = (ToA << 4) | (~fToA & 0xf)
 
             if ftoa_correction is not None:
-                sp_class = int(ftoa_correction['classList'][spId]) - 1
-
                 # 16, 8, 4, 12
-                #length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
-                #end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
+                length_ftoa = ftoa_correction['ftoa_correction'][pos[2], y, x, fToA, 0]
+                end_ftoa = ftoa_correction['ftoa_correction'][pos[2], y, x, fToA, 1]
 
                 try:
-                    fToA = random.randint(0, 15)
+                    fToA = random.randint(end_ftoa - length_ftoa, min(end_ftoa, 160))
                 except ValueError:
                     fToA = 0
 
-                CToA = ToA * 16 - fToA
-
-                # cToA phase shift due to fToA pattern
-                #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
-                #CToA += shift
+                CToA = ToA * 160 - fToA
 
             if toa_phase_correction > 0:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
