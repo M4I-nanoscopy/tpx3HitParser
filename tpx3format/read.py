@@ -444,6 +444,10 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
     f.seek(pos[0])
     b = f.read(pos[1])
 
+    if pos[2] != 2:
+        yield None
+        return
+
     # Read pixels as unsigned longs. pos[1] contains number of bytes per position. Unsigned long is 8 bytes
     struct_fmt = "<{}Q".format(pos[1] // 8)
 
