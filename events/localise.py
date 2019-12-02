@@ -100,7 +100,7 @@ def calculate_centroid(cluster_matrix, cluster_info):
     for idx, cluster in enumerate(cluster_matrix):
         # Center of mass of ToT cluster
         try:
-            y, x = ndimage.measurements.center_of_mass(cluster[0])
+            y, x = ndimage.measurements.center_of_mass(np.nan_to_num(cluster[0]))
         except FloatingPointError:
             logger.warning("Could not calculate center of mass: empty cluster. Cluster_info: %s" % cluster_info[idx])
             y, x = 0, 0
@@ -123,7 +123,7 @@ def calculate_random(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     for idx, cluster in enumerate(cluster_matrix):
-        nzy, nzx = np.nonzero(cluster[0])
+        nzy, nzx = np.nonzero(np.nan_to_num(cluster[0]))
 
         if len(nzy) == 0:
             logger.warning("Could not find random pixel: empty cluster?. Cluster_idx: %s" % idx)
