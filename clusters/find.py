@@ -224,11 +224,14 @@ def build_cluster(c, settings):
     toa = c['cToA']
 
     try:
-        # TODO: We're throwing away NaN information here of pixels that have not been hit, but this function is fast!
         cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
         cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
         raise lib.ClusterSizeExceeded
+
+    # Convert 0 tot NaN when appropriate, using the fact that when ToT == 0 there was no hit
+    cluster[1][cluster[0] == 0] = np.nan
+    cluster[0][cluster[0] == 0] = np.nan
 
     # Build cluster_info array
     ci['chipId'] = c[0]['chipId']

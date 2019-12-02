@@ -25,7 +25,7 @@ dt_ci = numpy.dtype([
     ('TSPIDR', numpy.uint16),
     ('sumToT', numpy.uint16)
 ])
-dt_clusters = 'uint16'
+dt_clusters = 'float16'
 
 CLUSTER_CHUNK_SIZE = 100000
 

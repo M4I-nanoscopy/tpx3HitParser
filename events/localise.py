@@ -163,7 +163,7 @@ def calculate_toa(cluster_matrix, cluster_info):
             i = np.random.randint(0, len(nzy) - 1)
             y, x = nzy[i], nzx[i]
         else:
-            maxes = np.argwhere(cluster[1] == np.max(cluster[1]))
+            maxes = np.argwhere(cluster[1] == np.nanmax(cluster[1]))
 
             if len(maxes) > 1:
                 i = np.random.randint(0, len(maxes) - 1)
@@ -188,7 +188,7 @@ def calculate_tot(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
 
     for idx, cluster in enumerate(cluster_matrix):
-        i = np.argmax(cluster[0])
+        i = np.nanargmax(cluster[0])
         y, x = np.unravel_index(i, cluster[0].shape)
 
         events[idx]['chipId'] = cluster_info[idx]['chipId']
@@ -235,6 +235,10 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
     # Delete ToA matrices, required for ToT only CNN
     if tot_only:
         cluster_matrix = np.delete(cluster_matrix, 1, 1)
+
+    # Convert NaN to zeros (this we also do during training)
+    # TODO: Can we have the CNN make use of the NaN information in any way
+    cluster_matrix = np.nan_to_num(cluster_matrix)
 
     # Check model shape and input shape
     if cluster_matrix.shape[1:4] != model.layers[0].input_shape[1:4]:
