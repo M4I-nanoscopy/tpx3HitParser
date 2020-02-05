@@ -45,7 +45,7 @@ edit this file or make your own and specify this with the `--config` option.
 
 ## License
 
-All rights reserved
+MIT License
 
 ## Authors
 
