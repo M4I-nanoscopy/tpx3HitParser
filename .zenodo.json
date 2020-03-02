@@ -1,0 +1,20 @@
+{
+  "license": {
+      "id": "MIT"
+    },
+  "creators": [
+    {
+      "name": "van Schayck, J. Paul",
+      "affiliation": "Maastricht MultiModal Molecular Imaging Institute (M4I), FHML, Maastricht University, Maastricht, The Netherlands",
+      "orcid": "https://orcid.org/0000-0001-6591-4637"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "scheme": "doi",
+      "identifier": "10.5281/zenodo.3635923",
+      "relation": "isReferencedBy",
+      "resource_type": "dataset"
+    }
+  ]
+}
