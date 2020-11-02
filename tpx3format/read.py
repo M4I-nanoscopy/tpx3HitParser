@@ -89,7 +89,8 @@ def read_raw(file_name, cores):
                 positions[i] = [position+16, size-(8*2), chip_nr]
 
         elif pkg_type == 0x6:
-            logger.info("TDC timestamp at position %d len %d" % (position, size))
+            pass
+            logger.debug("TDC timestamp at position %d len %d" % (position, size))
             # TODO: Use TDC packages
             # tdc = parse_tdc_packet(pkg)
         elif pkg_type == 0xb:
@@ -167,15 +168,17 @@ def read_raw(file_name, cores):
 
 
 def parse_heartbeat_packet(pkg, size):
+    time = pkg >> 16
     if pkg >> 56 == 0x44:
-        lsb = (pkg >> 16) & 0xffffffff
+        lsb = time & 0xffffffff
         logger.debug('Heartbeat (LSB). lsb %d. len %d' % (lsb, size))
     if pkg >> 56 == 0x45:
-        msb = (pkg >> 16) & 0xff
+        msb = (time & 0xFFFFFFFF) << 32
         logger.debug('Heartbeat (MSB). msb %d. len %d' % (msb, size))
     return
 
 
+# TDC (Time to Digital Converter) packages can come from the external trigger
 def parse_tdc_packet(pkg):
     tdc_type = pkg >> 56
     counter = (pkg >> 44) & 0xfff
