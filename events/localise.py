@@ -206,23 +206,15 @@ def calculate_tot(cluster_matrix, cluster_info):
 
 
 def cnn(cluster_matrix, cluster_info, events, tot_only):
-    # Do keras imports here, as importing earlier may raise errors unnecessary when keras will not be used
+    # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
     from keras.models import load_model
-    import keras
+    import tensorflow as tf
 
     # Hide some of the TensorFlow debug information
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
     # Set amount of cores to use for TensorFlow when using CPU only
-    # Set to a limit of 1 GPU
-    keras.backend.set_session(
-        keras.backend.tf.Session(
-            config=keras.backend.tf.ConfigProto(intra_op_parallelism_threads=lib.config.settings.cores,
-                                                inter_op_parallelism_threads=lib.config.settings.cores,
-                                                device_count={'GPU': 1}
-                                                )
-        )
-    )
+    tf.config.threading.set_intra_op_parallelism_threads(lib.config.settings.cores)
 
     # Load model
     model_path = lib.config.settings.event_cnn_model
