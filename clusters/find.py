@@ -10,8 +10,8 @@ logger = logging.getLogger('root')
 
 
 def find_clusters(settings, hits):
-    hits2 = np.stack((hits['x'], hits['y'], hits['cToA']), axis=-1).astype('int64')
-    labels = clfind(hits2)
+    hits_stacked = np.stack((hits['x'], hits['y'], hits['cToA']), axis=-1).astype('int64')
+    labels = clfind(hits_stacked)
 
     cm_chunk = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
     ci_chunk = np.zeros(len(hits), dtype=dt_ci)
@@ -21,25 +21,24 @@ def find_clusters(settings, hits):
     for label in range(np.max(labels)):
         hit_idx = np.where(labels == label)
 
-        if len(hit_idx[0]) > 2:
-            cluster = np.take(hits, hit_idx[0])
-        else:
-            continue
+        cluster = np.take(hits, hit_idx[0])
 
         # Only use clean clusters
-        if clean_cluster(cluster, settings):
-            try:
-                ci, cm = build_cluster(cluster, settings)
-                cm_chunk[c] = cm
-                ci_chunk[c] = ci
-                c += 1
-            except lib.ClusterSizeExceeded:
-                logger.warning("Cluster exceeded max cluster size "
-                               "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
-                pass
+        if not clean_cluster(cluster, settings):
+            continue
 
-    #ci_chunk = np.resize(ci_chunk, c)
-    #cm_chunk = np.resize(cm_chunk, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
+        try:
+            ci, cm = build_cluster(cluster, settings)
+            cm_chunk[c] = cm
+            ci_chunk[c] = ci
+            c += 1
+        except lib.ClusterSizeExceeded:
+            logger.warning("Cluster exceeded max cluster size "
+                           "defined by cluster_matrix_size (%i)" % settings.cluster_matrix_size)
+            pass
+
+    ci_chunk = np.resize(ci_chunk, c)
+    cm_chunk = np.resize(cm_chunk, (c, 2, settings.cluster_matrix_size, settings.cluster_matrix_size))
 
     return cm_chunk, ci_chunk
 

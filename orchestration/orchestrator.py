@@ -65,7 +65,7 @@ class Orchestrator:
             positions.append(position)
 
             chunk_hits += position[1] // 8
-            n_hits += chunk_hits
+            n_hits += position[1] // 8
 
             # Break early when max_hits has been reached
             if 0 < self.settings.max_hits < n_hits:

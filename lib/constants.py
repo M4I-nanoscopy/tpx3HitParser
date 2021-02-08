@@ -23,7 +23,7 @@ dt_ci = numpy.dtype([
 ])
 dt_clusters = 'uint16'
 
-CLUSTER_CHUNK_SIZE = 100000
+CLUSTER_CHUNK_SIZE = 1000000
 
 # Event matrix key indices
 dt_event = numpy.dtype([

@@ -69,18 +69,6 @@ class io:
     def del_hits(self):
         del self.write['hits']
 
-    def write_cluster_index_chunk(self, clusters):
-        if 'cluster_index' not in self.write:
-            self.write.create_dataset('cluster_index', shape=(len(clusters), 16), dtype='int64', maxshape=(None,16),
-                                      chunks=(constants.CLUSTER_CHUNK_SIZE, 16), data=clusters)
-        else:
-            clusters_f = self.write['cluster_index']
-
-            old = len(clusters_f)
-            clusters_f.resize(old + len(clusters), 0)
-
-            clusters_f[old:] = clusters
-
     def write_cluster_chunk(self, ci, cm):
         if 'cluster_info' not in self.write:
             cms = lib.config.settings.cluster_matrix_size

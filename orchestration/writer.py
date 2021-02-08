@@ -33,6 +33,7 @@ class Writer(Process):
             try:
                 data = self.output_queue.get(timeout=1)
             except queue.Empty:
+                # Check if the orchestrator is signalling there is no more output data coming
                 if self.finalise_writing.is_set():
                     break
                 else:
