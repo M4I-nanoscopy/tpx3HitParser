@@ -31,9 +31,9 @@ dt_event = numpy.dtype([
     ('x', numpy.float64),
     ('y', numpy.float64),
     ('cToA', numpy.uint16),
-    ('TSPIDR', numpy.uint16),
-    ('sumToT', numpy.uint16)
+    ('TSPIDR', numpy.uint16)
 ])
+EVENTS_CHUNK_SIZE = 1000000
 
 # Control events
 CONTROL_END_OF_COMMAND = 0x71bf # 29119

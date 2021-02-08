@@ -45,6 +45,9 @@ class Writer(Process):
             if self.settings.store_clusters and 'clusters' in data:
                 self.write_clusters(data['cluster_info'], data['clusters'])
 
+            if self.settings.store_events and 'events' in data:
+                self.write_events(data['events'])
+
             self.finished_queue.put(data['n_hits'])
 
             self.output_queue.task_done()
@@ -61,6 +64,9 @@ class Writer(Process):
                                    self.settings.cluster_min_sum_tot,
                                    self.settings.cluster_max_size, self.settings.cluster_min_size)
 
+        if self.settings.store_events:
+            self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model)
+
         self.io.close_write()
 
     def write_hits(self, hits):
@@ -68,4 +74,7 @@ class Writer(Process):
 
     def write_clusters(self, cluster_info, clusters):
         self.io.write_cluster_chunk(cluster_info, clusters)
+
+    def write_events(self, e):
+        self.io.write_event_chunk(e)
 

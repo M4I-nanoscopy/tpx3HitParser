@@ -50,6 +50,12 @@ class Worker(Process):
                 if self.settings.store_clusters:
                     self.store_clusters(len(hits), clusters, cluster_info)
 
+                if self.settings.E:
+                    e = self.parse_clusters(clusters, cluster_info)
+
+                    if self.settings.store_events:
+                        self.store_events(len(hits), e)
+
             # TODO: Figure out if this is pretty
             if not self.settings.store_hits and not self.settings.store_clusters and not self.settings.store_events:
                 self.output_queue.put({'n_hits': len(hits)})
@@ -75,12 +81,10 @@ class Worker(Process):
         return cm_chunk, ci_chunk
 
     # From clusters to events
-    def parse_clusters(self, clusters):
-        pass
-        # Events ###
-        # e = None
-        # if self.settings.E:
-        #     e = events.localise_events(cluster_matrix, cluster_info, settings.algorithm)
+    def parse_clusters(self, clusters, cluster_info):
+        e = events.localise_events(clusters, cluster_info, self.settings.algorithm)
+
+        return e
 
     def store_hits(self, hits):
         output = {
@@ -98,3 +102,12 @@ class Worker(Process):
         }
 
         self.output_queue.put(output)
+
+    def store_events(self, n_hits, e):
+        output = {
+            'events': e,
+            'n_hits': n_hits
+        }
+
+        self.output_queue.put(output)
+

@@ -1,6 +1,4 @@
 import logging
-import multiprocessing
-import time
 import random
 from scipy import ndimage
 
@@ -18,78 +16,22 @@ logger = logging.getLogger('root')
 
 
 def localise_events(cluster_matrix, cluster_info, method):
-    logger.info("Started event localization on %d events using method %s" % (len(cluster_info), method))
-    begin = time.time()
-
-    events = np.empty(len(cluster_info), dtype=dt_event)
+    logger.debug("Started event localization on %d events using method %s" % (len(cluster_info), method))
 
     if method == "centroid":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_centroid)
+        events = calculate_centroid(cluster_matrix, cluster_info)
     elif method == "random":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_random)
+        events = calculate_random(cluster_matrix, cluster_info)
     elif method == "highest_toa":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_toa)
+        events = calculate_toa(cluster_matrix, cluster_info)
     elif method == "highest_tot":
-        events = split_calculation(cluster_matrix, cluster_info, events, calculate_tot)
+        events = calculate_tot(cluster_matrix, cluster_info)
     elif method == "cnn":
-        events = cnn(cluster_matrix, cluster_info, events, lib.config.settings.event_cnn_tot_only)
+        events = cnn(cluster_matrix, cluster_info, lib.config.settings.event_cnn_tot_only)
     else:
         raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
-    time_taken = time.time() - begin
-
-    logger.info(
-        "Finished event localization in %d seconds ( %d events/s )" % (time_taken, len(cluster_info) / time_taken))
-
     return events
-
-
-def split_calculation(cluster_matrix, cluster_info, events, method):
-    # Setup pool
-    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker, maxtasksperchild=1000)
-    results = {}
-
-    # Progress bar
-    progress_bar = tqdm(total=len(cluster_info), unit="clusters", smoothing=0.1, unit_scale=True)
-
-    # First split clusters in chunks
-    chunk_size = lib.config.settings.event_chunk_size
-    if chunk_size > len(cluster_info):
-        logger.warning("Cluster chunk size is larger than amount of events")
-        chunk_size = len(cluster_info)
-
-    start = 0
-    r = 0
-    while start < len(cluster_info):
-        end = start + chunk_size
-
-        if end > len(cluster_info):
-            end = len(cluster_info)
-
-        # This reads the clusters chunk wise.
-        cm_chunk = cluster_matrix[start:end]
-        ci_chunk = cluster_info[start:end]
-
-        results[r] = pool.apply_async(method, args=([cm_chunk, ci_chunk]))
-        start = end
-        r += 1
-
-    pool.close()
-
-    offset = 0
-    for idx in range(0, len(results)):
-        events_chunk = results[idx].get(timeout=100)
-        progress_bar.update(len(events_chunk))
-
-        events[offset:offset + len(events_chunk)] = events_chunk
-        offset += len(events_chunk)
-
-        del results[idx]
-
-    progress_bar.close()
-
-    return events
-
 
 def calculate_centroid(cluster_matrix, cluster_info):
     events = np.empty(len(cluster_info), dtype=dt_event)
@@ -114,7 +56,6 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
-        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
@@ -143,7 +84,6 @@ def calculate_random(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
-        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
@@ -200,12 +140,11 @@ def calculate_tot(cluster_matrix, cluster_info):
 
         events[idx]['cToA'] = cluster_info[idx]['cToA']
         events[idx]['TSPIDR'] = cluster_info[idx]['TSPIDR']
-        events[idx]['sumToT'] = cluster_info[idx]['sumToT']
 
     return events
 
 
-def cnn(cluster_matrix, cluster_info, events, tot_only):
+def cnn(cluster_matrix, cluster_info, tot_only):
     # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
     import tensorflow as tf
     from tensorflow.keras.models import load_model
@@ -239,7 +178,6 @@ def cnn(cluster_matrix, cluster_info, events, tot_only):
     predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=1)
 
     # Copy all events from cluster_info as base
-    # TODO: This loads whole cluster_info matrix at once and may cause memory issues
     events = cluster_info[()].astype(dt_event)
 
     # Add prediction offset from cluster origin

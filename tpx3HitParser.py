@@ -47,15 +47,6 @@ def main():
     # if settings.correct_chip_edge:
     #     e = events.chip_edge_correct(e)
     #
-    # if settings.raw and not settings.store_hits:
-    #     io.del_hits()
-    #
-    # if settings.C and not settings.store_clusters:
-    #     io.del_clusters()
-    #
-    # if settings.store_events:
-    #     io.store_events(e, settings.algorithm, settings.event_cnn_model)
-    #
     # if settings.store_predictions:
     #     io.store_predictions(events.calculate_predictions(e, cluster_info), settings.algorithm)
 

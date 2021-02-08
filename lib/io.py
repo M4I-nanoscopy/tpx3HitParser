@@ -113,8 +113,16 @@ class io:
         del self.write['cluster_info']
         del self.write['clusters']
 
-    def store_events(self, events, algorithm, cnn_model):
-        self.write['events'] = events
+    def write_event_chunk(self, events):
+        if 'events' not in self.write:
+            shape = (constants.EVENTS_CHUNK_SIZE,)
+            self.write.create_dataset('events', dtype=constants.dt_event, maxshape=(None,), chunks=shape, data=events)
+        else:
+            events_f = self.write['events']
+            events_f.resize(len(events_f) + len(events), 0)
+            events_f[len(events_f):] = events
+
+    def store_events(self, algorithm, cnn_model):
         self.write_base_attributes('events')
         self.write['events'].attrs['algorithm'] = algorithm
         self.write['events'].attrs['shape'] = tpx3format.calculate_image_shape()
@@ -148,14 +156,6 @@ class io:
             raise lib.IOException("File %s does not have a /clusters dataset" % file_name)
 
         return f['clusters'], f['cluster_info']
-
-    def read_cluster_indices(self, file_name):
-        f = self.read_h5(file_name)
-
-        if 'cluster_index' not in f:
-            raise lib.IOException("File %s does not have a /cluster_index dataset" % file_name)
-
-        return f['cluster_index']
 
     def read_events(self, file_name):
         f = self.read_h5(file_name)

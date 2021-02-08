@@ -101,7 +101,9 @@ class Orchestrator:
         self.finalise_writing.set()
         self.writer.join()
 
-        self.logger.debug("Finished writing output")
+        # Finished!
+        self.progress_bar.close()
+        self.logger.info("Finished")
 
     def sigint(self, signum, frame):
         # Start signalling to child processes that we're terminating early
