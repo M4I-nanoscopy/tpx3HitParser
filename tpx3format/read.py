@@ -343,7 +343,6 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             ToA = int((pixel >> (16 + 14)) & 0x3fff)
             ToT = int((pixel >> (16 + 4)) & 0x3ff)
             fToA = int((pixel >> 16) & 0xf)
-            spId = int(dcol / 2) * 64 + int(spix / 4)
 
             # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
             CToA = (ToA << 4) | (~fToA & 0xf)
@@ -369,7 +368,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
             if ToT_correct < tot_threshold:
                 yield None
             else:
-                yield (pos[2], x, y, ToT_correct, CToA, time, fToA, spId, int(pix))
+                yield (pos[2], x, y, ToT_correct, CToA, time)
     else:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None

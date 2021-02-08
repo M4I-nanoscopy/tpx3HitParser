@@ -1,6 +1,6 @@
 import numpy
 
-VERSION = '1.0.0'
+VERSION = '2.0.0'
 
 # Hit matrix data type
 dt_hit = numpy.dtype([
@@ -10,9 +10,6 @@ dt_hit = numpy.dtype([
     ('ToT', numpy.uint16),
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16),
-    ('fToA', numpy.uint8),
-    ('spId', numpy.uint16),
-    ('pix', numpy.uint8)
 ])
 HITS_CHUNK_SIZE = 10000000
 
