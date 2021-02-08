@@ -67,17 +67,13 @@ class io:
 
             hits_f[old:] = hits
 
-    def store_hits(self, control_events, file_name):
+    def store_hits(self, file_name):
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
         self.write['hits'].attrs['shape'] = tpx3format.calculate_image_shape()
 
         if lib.config.settings.hits_tot_correct_file != "0":
             self.write['hits'].attrs['tot_correction_file'] = lib.config.settings.hits_tot_correct_file
-
-        self.write['control'] = control_events
-        self.write_base_attributes('control')
-        self.write['control'].attrs['input_file_name'] = file_name
 
     def del_hits(self):
         del self.write['hits']

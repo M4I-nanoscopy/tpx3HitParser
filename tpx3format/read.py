@@ -1,54 +1,24 @@
 import logging
-import multiprocessing
-import random
 import struct
 
 import h5py
 import numpy as np
 
-from lib import constants
 from lib.constants import *
 import lib
-from tqdm import tqdm
 import os
 
 # TODO: Logging does not work for multiprocessing processes on Windows
 logger = logging.getLogger('root')
 
 
-def read_raw(file_name, cores):
-    f = open(file_name, "rb")
-    estimate = os.fstat(f.fileno()).st_size / 8
-
-    # Allocate an array to hold positions of packages. Using int64 to support files over 4.2 GB
-    max_positions = 500
-    positions = np.empty((max_positions, 3), dtype='int64')
-
-    # Check if we have a loadable ToT correction file
-    check_tot_correction(lib.config.settings.hits_tot_correct_file)
-
-    # Check if we have a loadable fToA correction file
-    check_ftoa_correction(lib.config.settings.hits_ftoa_correct_file)
-
-    # Allocate processing processes
-    pool = multiprocessing.Pool(cores, initializer=lib.init_worker, maxtasksperchild=1000)
-
-    # Make progress bar to keep track of hits being read
-    logger.info("Reading file %s, estimating %d hits" % (file_name, estimate))
-    progress_bar = tqdm(total=estimate, unit="hits", smoothing=0.1, unit_scale=True)
-
-    def pb_update(res):
-        progress_bar.update(len(res))
-
+def read_positions(f):
     control_events = []
-    results = {}
-    n_hits = 0
-    mode = 0
     i = 0
-    r = 0
     while True:
         b = f.read(8)
-        position = f.tell()
+        cursor = f.tell()
+        position = []
 
         if not b:
             # Reached EOF
@@ -86,85 +56,29 @@ def read_raw(file_name, cores):
             # Heartbeat packages are always followed by a 0x7145 or 0x7144 control package, and then possibly
             # pixels. Continue to parse those pixels, but strip away the control package
             if size - (8*2) > 0:
-                positions[i] = [position+16, size-(8*2), chip_nr]
+                position = [cursor+16, size-(8*2), chip_nr]
 
         elif pkg_type == 0x6:
             pass
-            logger.debug("TDC timestamp at position %d len %d" % (position, size))
+            logger.debug("TDC timestamp at position %d len %d" % (cursor, size))
             # TODO: Use TDC packages
             # tdc = parse_tdc_packet(pkg)
         elif pkg_type == 0xb:
-            positions[i] = [position, size, chip_nr]
+            position = [cursor, size, chip_nr]
             i += 1
         else:
             logger.warning("Found packet with unknown type %d" % pkg_type)
 
-        # Check if chunk is ready to be processed, off load to sub process
-        if i == max_positions:
-            results[r] = pool.apply_async(parse_data_packages,
-                                          args=[np.copy(positions), file_name, lib.config.settings],
-                                          callback=pb_update)
-            r += 1
-            i = 0
-
-        n_hits += size // 8
-
-        # Break early when max_hits has been reached
-        if 0 < lib.config.settings.max_hits < n_hits:
-            break
+        yield position
 
         # Skip over the data packets and to the next header
-        f.seek(position + size, 0)
+        f.seek(cursor + size, 0)
 
-    logger.info("File %s contains %d hits in mode %d " % (file_name, n_hits, mode))
-    progress_bar.total = n_hits
-
-    # Parse remaining bit of packages
-    results[r] = pool.apply_async(parse_data_packages, args=[positions[0:i], file_name, lib.config.settings],
-                                  callback=pb_update)
-    pool.close()
-
-    hits = np.empty(constants.HITS_CHUNK_SIZE, dtype=dt_hit)
-    offset = 0
-    parsed_hits = 0
-    for idx in range(0, len(results)):
-        hits_chunk = results[idx].get(timeout=100)
-        parsed_hits += len(hits_chunk)
-
-        # Fill up hits until max size, then yield
-        if offset + len(hits_chunk) < len(hits):
-            hits[offset:offset + len(hits_chunk)] = hits_chunk
-            offset += len(hits_chunk)
-        else:
-            # How much more fit before yielding
-            fit = len(hits) - offset
-
-            # Store to fill up, and yield
-            hits[offset:offset + fit] = hits_chunk[0:fit]
-            yield hits, control_events
-
-            # Reset
-            hits = np.empty(constants.HITS_CHUNK_SIZE, dtype=dt_hit)
-            offset = 0
-
-            # Fill new chunk with remainder
-            hits[0:len(hits_chunk) - fit] = hits_chunk[fit:]
-            offset += len(hits_chunk) - fit
-
-        # This reduces memory usage, by signaling the GC that this process is done
-        del results[idx]
-
-    progress_bar.close()
-
-    # Resize remainder of hits to exact size and yield
-    hits = np.resize(hits, offset)
-    yield hits, control_events
-
-    if lib.config.settings.hits_remove_cross:
-        # TODO: This is an indirect way of calculating this!
-        diff = n_hits - parsed_hits
-        logger.info("Removed %d (%.2f percent) hits in chip border pixels or below ToT threshold (%d)"
-                    % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
+    # if lib.config.settings.hits_remove_cross:
+    #     # TODO: This is an indirect way of calculating this!
+    #     diff = n_hits - parsed_hits
+    #     logger.info("Removed %d (%.2f percent) hits in chip border pixels or below ToT threshold (%d)"
+    #                 % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
 
 
 def parse_heartbeat_packet(pkg, size):
@@ -234,25 +148,6 @@ def check_tot_correction(correct_file):
     return True
 
 
-def check_ftoa_correction(correct_file):
-    if correct_file == "0":
-        # No fToA correction requested
-        return True
-
-    if not os.path.exists(correct_file):
-        raise Exception("fToA correction file (%s) does not exists" % correct_file)
-
-    f = h5py.File(correct_file, 'r')
-
-    if 'corrector' not in f:
-        raise Exception("fToA correction file does not contain a ftoa_correction matrix" % correct_file)
-
-    #data = f['ftoa_correction']
-    #   logger.info("Found fToA correction file that was created on %s" % data.attrs['creation_date'])
-
-    return True
-
-
 def read_tot_correction(correct_file):
     if correct_file == "0":
         # No ToT correction requested
@@ -262,20 +157,6 @@ def read_tot_correction(correct_file):
     data = f['tot_correction']
 
     return data[()]
-
-
-def read_ftoa_correction(correct_file):
-    if correct_file == "0":
-        # No fToA correction requested
-        return None
-
-    f = h5py.File(correct_file, 'r')
-    data = {
-        'corrector': f['corrector'][()],
-        'classList': f['classList'][()]
-    }
-
-    return data
 
 
 def remove_cross_hits(hits):
@@ -405,13 +286,8 @@ def combine_chips(hits, hits_cross_extra_offset):
     # hits['x'][ind] = hits['x'][ind]
     hits['y'][ind] = 255 - hits['y'][ind] + offset
 
-    # logger.debug("Combined chips to one matrix")
 
-
-def parse_data_packages(positions, file_name, settings):
-    # Reopen file in new process
-    f = open(file_name, "rb")
-
+def parse_data_packages(positions, f, settings):
     # Allocate space for storing hits
     n_hits = sum(pos[1] // 8 for pos in positions)
     hits = np.zeros(n_hits, dtype=dt_hit)
@@ -419,12 +295,9 @@ def parse_data_packages(positions, file_name, settings):
     # Load ToT correction matrix
     tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
-    # Load fToA correction matrix
-    ftoa_correction = read_ftoa_correction(settings.hits_ftoa_correct_file)
-
     i = 0
     for pos in positions:
-        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, settings.hits_toa_phase_correction, ftoa_correction):
+        for hit in parse_data_package(f, pos, tot_correction, settings.hits_tot_threshold, settings.hits_toa_phase_correction):
             if hit is not None:
                 hits[i] = hit
                 i += 1
@@ -444,7 +317,7 @@ def parse_data_packages(positions, file_name, settings):
     return hits
 
 
-def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction, ftoa_correction):
+def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction):
     f.seek(pos[0])
     b = f.read(pos[1])
 
@@ -474,24 +347,6 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
 
             # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
             CToA = (ToA << 4) | (~fToA & 0xf)
-
-            if ftoa_correction is not None:
-                sp_class = int(ftoa_correction['classList'][spId]) - 1
-
-                # 16, 8, 4, 12
-                #length_ftoa = ftoa_correction['corrector'][fToA, pix, 2, sp_class]
-                #end_ftoa = ftoa_correction['corrector'][fToA, pix, 3, sp_class]
-
-                try:
-                    fToA = random.randint(0, 15)
-                except ValueError:
-                    fToA = 0
-
-                CToA = ToA * 16 - fToA
-
-                # cToA phase shift due to fToA pattern
-                #shift = ftoa_correction['corrector'][15, pix, 2, sp_class] - 10
-                #CToA += shift
 
             if toa_phase_correction > 0:
                 # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction

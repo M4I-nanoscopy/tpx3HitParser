@@ -207,8 +207,8 @@ def calculate_tot(cluster_matrix, cluster_info):
 
 def cnn(cluster_matrix, cluster_info, events, tot_only):
     # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
-    from keras.models import load_model
     import tensorflow as tf
+    from tensorflow.keras.models import load_model
 
     # Hide some of the TensorFlow debug information
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
