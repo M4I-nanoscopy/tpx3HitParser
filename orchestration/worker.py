@@ -39,14 +39,20 @@ class Worker(Process):
             if self.settings.store_hits:
                 self.store_hits(hits)
 
+            # TODO: Reimplement freq_tot
             # if self.settings.freq_tot:
             #     freq_tot = tpx3format.build_freq_tot(hits)
             #     io.store_freq_tot(freq_tot)
 
+            if self.settings.C:
+                clusters, cluster_info = self.parse_hits(hits)
+
+                if self.settings.store_clusters:
+                    self.store_clusters(len(hits), clusters, cluster_info)
+
             # TODO: Figure out if this is pretty
             if not self.settings.store_hits and not self.settings.store_clusters and not self.settings.store_events:
                 self.output_queue.put({'n_hits': len(hits)})
-            # clusters = self.parse_clusters(hits)
 
             self.input_queue.task_done()
 
@@ -64,19 +70,9 @@ class Worker(Process):
 
     # From hits to clusters
     def parse_hits(self, hits):
-        pass
-        # Clusters
-        # cluster_matrix = None
-        # cluster_info = None
-        # cluster_stats = []
-        # if self.settings.C:
-        # cm_chunk, ci_chunk, index_chunk, stats_chunk = clusters.find_clusters(hits)
-        # cluster_stats.extend(stats_chunk)
+        cm_chunk, ci_chunk = clusters.find_clusters(self.settings, hits)
 
-        # Store clusters and cluster stats, we may delete it later
-        # io.store_clusters(cluster_stats, settings.cluster_time_window, settings.cluster_max_sum_tot,
-        #                   settings.cluster_min_sum_tot,
-        #                   settings.cluster_max_size, settings.cluster_min_size)
+        return cm_chunk, ci_chunk
 
     # From clusters to events
     def parse_clusters(self, clusters):
@@ -90,6 +86,15 @@ class Worker(Process):
         output = {
             'hits': hits,
             'n_hits': len(hits)
+        }
+
+        self.output_queue.put(output)
+
+    def store_clusters(self, n_hits, clusters, cluster_info):
+        output = {
+            'clusters': clusters,
+            'cluster_info': cluster_info,
+            'n_hits': n_hits
         }
 
         self.output_queue.put(output)

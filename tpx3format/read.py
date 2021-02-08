@@ -303,7 +303,7 @@ def parse_data_packages(positions, f, settings):
                 i += 1
 
     # There may have been hits that were not parsed (failed package), resize those empty rows away.
-    hits.resize(i)
+    hits.resize((i,), refcheck=False)
 
     if settings.hits_remove_cross:
         hits = remove_cross_hits(hits)
@@ -311,8 +311,7 @@ def parse_data_packages(positions, f, settings):
     if settings.hits_combine_chips:
         combine_chips(hits, settings.hits_cross_extra_offset)
 
-    # TODO: Implement sorting
-    # hits = np.sort(hits, 0, 'heapsort', 'TSPIDR')
+    hits = np.sort(hits, 0, 'stable', 'cToA')
 
     return hits
 

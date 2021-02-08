@@ -110,14 +110,11 @@ class io:
             ci_f[old:] = ci
             cm_f[old:] = cm
 
-    def store_clusters(self,cluster_stats, cluster_time_window, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
-        self.write_base_attributes('cluster_info')
+    def store_clusters(self, cluster_time_window, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
+        # self.write_base_attributes('cluster_info')
         self.write_base_attributes('clusters')
 
-        # Store cluster_stats
-        self.write.create_dataset('cluster_stats', shape=(len(cluster_stats), 2), dtype='uint16', data=cluster_stats)
-
-        self.write['cluster_stats'].attrs.update({
+        self.write['cluster_info'].attrs.update({
             'cluster_time_window': cluster_time_window,
             'cluster_min_sum_tot': cluster_min_sum_tot,
             'cluster_max_sum_tot': cluster_max_sum_tot,

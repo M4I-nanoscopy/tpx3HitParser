@@ -58,7 +58,7 @@ class Orchestrator:
         self.progress_bar = tqdm(total=estimate, unit="hits", smoothing=0.1, unit_scale=True)
 
         # Allocate an array to hold positions of packages. Using int64 to support files over 4.2 GB
-        max_positions = 500
+        max_positions = 10 # TODO: Change this to a hits_chunk sized parameter
         positions = np.empty((max_positions, 3), dtype='int64')
         n_hits = 0
         i = 0
@@ -85,7 +85,7 @@ class Orchestrator:
         n_chunks += 1
         self.input_queue.put(positions[0:i])
 
-        self.logger.info("File %s contains %d hits" % (self.settings.raw, n_hits))
+        self.logger.debug("File %s contains %d hits" % (self.settings.raw, n_hits))
         self.progress_bar.total = n_hits
 
         processed_chunks = 0
