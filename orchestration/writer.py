@@ -42,7 +42,6 @@ class Writer(Process):
                 self.write_hits(data['hits'])
 
             if self.settings.store_clusters and 'clusters' in data:
-
                 self.write_clusters(data['cluster_info'], data['clusters'])
 
             self.finished_queue.put(data['n_hits'])

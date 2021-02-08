@@ -57,33 +57,32 @@ class Orchestrator:
         self.logger.info("Reading file %s, estimating %d hits" % (self.settings.raw, estimate))
         self.progress_bar = tqdm(total=estimate, unit="hits", smoothing=0.1, unit_scale=True)
 
-        # Allocate an array to hold positions of packages. Using int64 to support files over 4.2 GB
-        max_positions = 10 # TODO: Change this to a hits_chunk sized parameter
-        positions = np.empty((max_positions, 3), dtype='int64')
+        positions = []
         n_hits = 0
-        i = 0
         n_chunks = 0
+        chunk_hits = 0
         for position in tpx3format.read_positions(f):
-            positions[i] = position
-            i += 1
+            positions.append(position)
 
-            n_hits += position[1] // 8
+            chunk_hits += position[1] // 8
+            n_hits += chunk_hits
 
             # Break early when max_hits has been reached
             if 0 < self.settings.max_hits < n_hits:
                 break
 
-            if i == max_positions:
+            if chunk_hits > self.settings.cluster_chunk_size:
                 n_chunks += 1
                 self.input_queue.put(positions)
-                i = 0
+                positions = []
+                chunk_hits = 0
 
         # We don't need the input file anymore in this process
         f.close()
 
         # Push remainder to input queue
         n_chunks += 1
-        self.input_queue.put(positions[0:i])
+        self.input_queue.put(positions)
 
         self.logger.debug("File %s contains %d hits" % (self.settings.raw, n_hits))
         self.progress_bar.total = n_hits
