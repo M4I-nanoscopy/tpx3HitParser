@@ -12,12 +12,13 @@ class Worker(Process):
     input_queue = None
     output_queue = None
 
-    def __init__(self, settings, keep_processing, iq, oq):
+    def __init__(self, settings, keep_processing, iq, oq, gq):
         # Setting this process to daemon, makes them killed if the child is killed.
         Process.__init__(self)
 
         self.input_queue = iq
         self.output_queue = oq
+        self.gpu_queue = gq
         self.settings = settings
         self.keep_processing = keep_processing
         self.logger = logging.getLogger('root')
@@ -51,10 +52,14 @@ class Worker(Process):
                     self.store_clusters(len(hits), clusters, cluster_info)
 
                 if self.settings.E:
-                    e = self.parse_clusters(clusters, cluster_info)
+                    if self.settings.algorithm != 'cnn':
+                        e = self.parse_clusters(clusters, cluster_info)
 
-                    if self.settings.store_events:
-                        self.store_events(len(hits), e)
+                        if self.settings.store_events:
+                            self.store_events(len(hits), e)
+                    else:
+                        # Send of to dedicated GPU process
+                        self.gpu_queue.put({'clusters': clusters, 'cluster_info': cluster_info, 'n_hits': len(hits)})
 
             # TODO: Figure out if this is pretty
             if not self.settings.store_hits and not self.settings.store_clusters and not self.settings.store_events:

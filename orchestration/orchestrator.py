@@ -9,12 +9,14 @@ import logging
 from tqdm import tqdm
 
 import tpx3format
+from orchestration.gpu import Gpu
 from orchestration.worker import Worker
 from orchestration.writer import Writer
 
 
 class Orchestrator:
     writer = None
+    gpu = None
     workers = []
     progress_bar = None
 
@@ -24,6 +26,7 @@ class Orchestrator:
 
         # Build Queues to handle the input to the workers, and the output from the workers to the writer
         self.input_queue = JoinableQueue()
+        self.gpu_queue = JoinableQueue()
         self.output_queue = JoinableQueue()
         self.finished_queue = Queue()
 
@@ -39,9 +42,15 @@ class Orchestrator:
     def orchestrate(self):
         # Build workers to process the input
         for i in range(self.settings.cores):
-            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue)
+            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue, self.gpu_queue)
             p.start()
             self.workers.append(p)
+
+        # Build GPU worker if needed
+        if self.settings.algorithm == 'cnn' and self.settings.E:
+            p = Gpu(self.settings, self.keep_processing, self.gpu_queue, self.output_queue)
+            p.start()
+            self.gpu = p
 
         # Build writer
         p = Writer(self.settings, self.keep_processing, self.finalise_writing, self.output_queue, self.finished_queue)
@@ -120,11 +129,18 @@ class Orchestrator:
             worker.terminate()
             worker.join()
 
+        # Writer
         self.writer.terminate()
         self.writer.join()
 
-        # Cancle joining queues threads. They may not be empty, but we don't care anymore at this point
+        # Gpu
+        if self.gpu is not None:
+            self.gpu.terminate()
+            self.gpu.join()
+
+        # Cancel joining queues threads. They may not be empty, but we don't care anymore at this point
         self.input_queue.cancel_join_thread()
+        self.gpu_queue.cancel_join_thread()
         self.output_queue.cancel_join_thread()
         self.finished_queue.cancel_join_thread()
 

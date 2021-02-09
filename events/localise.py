@@ -26,8 +26,6 @@ def localise_events(cluster_matrix, cluster_info, method):
         events = calculate_toa(cluster_matrix, cluster_info)
     elif method == "highest_tot":
         events = calculate_tot(cluster_matrix, cluster_info)
-    elif method == "cnn":
-        events = cnn(cluster_matrix, cluster_info, lib.config.settings.event_cnn_tot_only)
     else:
         raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
@@ -144,25 +142,7 @@ def calculate_tot(cluster_matrix, cluster_info):
     return events
 
 
-def cnn(cluster_matrix, cluster_info, tot_only):
-    # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
-    import tensorflow as tf
-    from tensorflow.keras.models import load_model
-
-    # Hide some of the TensorFlow debug information
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
-    # Set amount of cores to use for TensorFlow when using CPU only
-    tf.config.threading.set_intra_op_parallelism_threads(lib.config.settings.cores)
-
-    # Load model
-    model_path = lib.config.settings.event_cnn_model
-
-    if not os.path.exists(model_path):
-        raise lib.UserConfigException('CNN model %s does not exist.' % model_path)
-
-    model = load_model(model_path)
-
+def cnn(cluster_matrix, cluster_info, model, tot_only):
     # Delete ToA matrices, required for ToT only CNN
     if tot_only:
         cluster_matrix = np.delete(cluster_matrix, 1, 1)
