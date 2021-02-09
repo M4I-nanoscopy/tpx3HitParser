@@ -10,19 +10,23 @@ logger = logging.getLogger('root')
 
 
 def find_clusters(settings, hits):
+    # Outsource the main cluster finding routine to a Rust compiled library
     hits_stacked = np.stack((hits['x'], hits['y'], hits['cToA']), axis=-1).astype('int64')
     labels = clfind(hits_stacked)
 
-    cm_chunk = np.zeros((len(hits), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
-    ci_chunk = np.zeros(len(hits), dtype=dt_ci)
+    # This takes the cluster labels, and take their hits, and converts it into a list of clusters with their hits
+    idx = labels.argsort()
+    ls = labels[idx]
+    split = 1 + np.where(ls[1:] != ls[:-1])[0]
+    clusters = np.split(hits[idx], split)
+
+    # Build the maximum size clusters we expect, before filtering
+    cm_chunk = np.zeros((len(clusters), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
+    ci_chunk = np.zeros(len(clusters), dtype=dt_ci)
 
     # Loop over all matches
     c = 0
-    for label in range(np.max(labels)):
-        hit_idx = np.where(labels == label)
-
-        cluster = np.take(hits, hit_idx[0])
-
+    for cluster in clusters:
         # Only use clean clusters
         if not clean_cluster(cluster, settings):
             continue
@@ -63,24 +67,19 @@ def build_cluster(c, settings):
 
     # Base cTOA value
     min_ctoa = min(c['cToA'])
-    c['cToA'] = c['cToA'] - min_ctoa
 
     # Base x and y value
     min_x = min(c['x'])
     min_y = min(c['y'])
 
-    c['x'] = c['x'] - min_x
-    c['y'] = c['y'] - min_y
-
-    rows = c['y']
-    cols = c['x']
-    tot = c['ToT']
-    toa = c['cToA']
+    rows = c['y'] - min_y
+    cols = c['x'] - min_x
+    dtoa = c['cToA'] - min_ctoa
 
     try:
-        # TODO: We're throwing away NaN information here of pixels that have not been hit, but this function is fast!
-        cluster[0, :, :] = scipy.sparse.coo_matrix((tot, (rows, cols)), shape=(m_size, m_size)).todense()
-        cluster[1, :, :] = scipy.sparse.coo_matrix((toa, (rows, cols)), shape=(m_size, m_size)).todense()
+        # TODO: We're throwing away the information which pixels have not been hit, but this function is fast!
+        cluster[0, :, :] = scipy.sparse.coo_matrix((c['ToT'], (rows, cols)), shape=(m_size, m_size)).todense()
+        cluster[1, :, :] = scipy.sparse.coo_matrix((dtoa, (rows, cols)), shape=(m_size, m_size)).todense()
     except ValueError:
         raise lib.ClusterSizeExceeded
 

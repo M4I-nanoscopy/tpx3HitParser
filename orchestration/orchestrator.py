@@ -4,7 +4,6 @@ import signal
 from multiprocessing import Queue, Event, JoinableQueue
 from time import sleep
 
-import numpy as np
 import logging
 
 from tqdm import tqdm
