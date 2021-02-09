@@ -9,9 +9,6 @@ import tpx3format
 
 
 class Worker(Process):
-    input_queue = None
-    output_queue = None
-
     def __init__(self, settings, keep_processing, iq, oq, gq):
         # Setting this process to daemon, makes them killed if the child is killed.
         Process.__init__(self)
@@ -22,6 +19,9 @@ class Worker(Process):
         self.settings = settings
         self.keep_processing = keep_processing
         self.logger = logging.getLogger('root')
+
+        self.f = None
+        self.tot_correction = None
 
     def run(self):
         # Ignore the interrupt signal. Let parent (orchestrator) handle that.
@@ -75,8 +75,12 @@ class Worker(Process):
 
     # From raw to hits
     def parse_raw(self, positions):
-        # Hits ###
-        hits_chunk = tpx3format.parse_data_packages(positions, self.f, self.settings)
+        # Load ToT correction matrix
+        if self.tot_correction is None and self.settings.hits_tot_correct_file != "0":
+            self.tot_correction = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
+
+        hits_chunk = tpx3format.parse_data_packages(positions, self.f, self.tot_correction, self.settings)
+
         return hits_chunk
 
     # From hits to clusters

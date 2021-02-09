@@ -4,6 +4,7 @@ import sys
 import lib
 import logging
 import orchestration
+import tpx3format
 
 logger = lib.setup_custom_logger('root', logging.INFO)
 
@@ -27,7 +28,10 @@ def main():
     # TODO: Check output file
 
     # Check if we have a loadable ToT correction file
-    # tpx3format.check_tot_correction(lib.config.settings.hits_tot_correct_file)
+    c = tpx3format.check_tot_correction(lib.config.settings.hits_tot_correct_file)
+    if c is not True:
+        logger.error(c)
+        return 1
 
     orchestrator = orchestration.Orchestrator(settings)
 
@@ -38,7 +42,7 @@ def main():
         orchestrator.cleanup()
 
     # Post event parsing corrections ###
-
+    # TODO: Reimplement these options
     # # Super Resolution
     # if settings.correct_super_res:
     #     e = events.subpixel_event_redistribution(e)
@@ -49,8 +53,6 @@ def main():
     #
     # if settings.store_predictions:
     #     io.store_predictions(events.calculate_predictions(e, cluster_info), settings.algorithm)
-
-    # io.close_write()
 
     return 0
 

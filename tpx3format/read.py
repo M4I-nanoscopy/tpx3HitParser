@@ -74,12 +74,6 @@ def read_positions(f):
         # Skip over the data packets and to the next header
         f.seek(cursor + size, 0)
 
-    # if lib.config.settings.hits_remove_cross:
-    #     # TODO: This is an indirect way of calculating this!
-    #     diff = n_hits - parsed_hits
-    #     logger.info("Removed %d (%.2f percent) hits in chip border pixels or below ToT threshold (%d)"
-    #                 % (diff, float(diff) / float(n_hits) * 100, lib.config.settings.hits_tot_threshold))
-
 
 def parse_heartbeat_packet(pkg, size):
     time = pkg >> 16
@@ -134,12 +128,12 @@ def check_tot_correction(correct_file):
         return True
 
     if not os.path.exists(correct_file):
-        raise Exception("ToT correction file (%s) does not exists" % correct_file)
+        return "ToT correction file (%s) does not exists" % correct_file
 
     f = h5py.File(correct_file, 'r')
 
     if 'tot_correction' not in f:
-        raise Exception("ToT correction file does not contain a tot_correction matrix" % correct_file)
+        return "ToT correction file %s does not contain a tot_correction matrix" % correct_file
 
     data = f['tot_correction']
 
@@ -287,13 +281,10 @@ def combine_chips(hits, hits_cross_extra_offset):
     hits['y'][ind] = 255 - hits['y'][ind] + offset
 
 
-def parse_data_packages(positions, f, settings):
+def parse_data_packages(positions, f, tot_correction, settings):
     # Allocate space for storing hits
     n_hits = sum(pos[1] // 8 for pos in positions)
     hits = np.zeros(n_hits, dtype=dt_hit)
-
-    # Load ToT correction matrix
-    tot_correction = read_tot_correction(settings.hits_tot_correct_file)
 
     i = 0
     for pos in positions:
