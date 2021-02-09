@@ -11,7 +11,7 @@ dt_hit = numpy.dtype([
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16),
 ])
-HITS_CHUNK_SIZE = 10000000
+HITS_CHUNK_SIZE = 10_000_000
 
 # Cluster info key indices
 dt_ci = numpy.dtype([
@@ -23,7 +23,7 @@ dt_ci = numpy.dtype([
 ])
 dt_clusters = 'uint16'
 
-CLUSTER_CHUNK_SIZE = 1000000
+CLUSTER_CHUNK_SIZE = 100_000
 
 # Event matrix key indices
 dt_event = numpy.dtype([
@@ -33,7 +33,7 @@ dt_event = numpy.dtype([
     ('cToA', numpy.uint16),
     ('TSPIDR', numpy.uint16)
 ])
-EVENTS_CHUNK_SIZE = 1000000
+EVENTS_CHUNK_SIZE = 100_000
 
 # Control events
 CONTROL_END_OF_COMMAND = 0x71bf # 29119

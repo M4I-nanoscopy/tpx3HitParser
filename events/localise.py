@@ -173,6 +173,6 @@ def cnn(cluster_matrix, cluster_info, model, tot_only):
     deleted = np.count_nonzero(ind_del)
 
     if deleted > 0:
-        logger.warning('Removed %d events found outside image matrix shape (%d).' % (deleted, shape))
+        logger.debug('Removed %d events found outside image matrix shape (%d).' % (deleted, shape))
 
     return events

@@ -4,7 +4,6 @@ import signal
 from multiprocessing import Process
 import queue
 
-import clusters
 import events
 import lib
 import numpy as np
@@ -33,8 +32,10 @@ class Gpu(Process):
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
         # Hide some of the TensorFlow debug information
-        if not self.settings.verbose:
-            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+        if self.settings.verbose:
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+        else:
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
         # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
         import tensorflow as tf
@@ -70,6 +71,7 @@ class Gpu(Process):
 
     # From clusters to events
     def parse_clusters_gpu(self, cluster_chunk, cluster_info_chunk):
+        # TODO: We're not parsing the remainder of clusters here!
         # Group clusters together, because it's suboptimal to do event localisation on small batches
         if self.offset + len(cluster_chunk) < EVENTS_CHUNK_SIZE:
             self.clusters[self.offset:self.offset + len(cluster_chunk)] = cluster_chunk
