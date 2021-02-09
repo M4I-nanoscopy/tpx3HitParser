@@ -32,12 +32,13 @@ class Gpu(Process):
         # Ignore the interrupt signal. Let parent (orchestrator) handle that.
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
+        # Hide some of the TensorFlow debug information
+        if not self.settings.verbose:
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
         # Do keras and tensorflow imports here, as importing earlier may raise errors unnecessary
         import tensorflow as tf
         from tensorflow.keras.models import load_model
-
-        # Hide some of the TensorFlow debug information
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
         # Set amount of cores to use for TensorFlow when using CPU only
         tf.config.threading.set_intra_op_parallelism_threads(self.settings.cores)
@@ -78,10 +79,9 @@ class Gpu(Process):
             return None
         else:
             e = events.cnn(self.clusters, self.cluster_info, self.model, self.settings.event_cnn_tot_only)
-            self.clusters = cluster_chunk
             self.offset = 0
-            self.clusters[self.offset:self.offset + len(cluster_chunk)] = cluster_chunk
-            self.cluster_info[self.offset:self.offset + len(cluster_chunk)] = cluster_info_chunk
+            self.clusters[0:len(cluster_chunk)] = cluster_chunk
+            self.cluster_info[0:len(cluster_chunk)] = cluster_info_chunk
 
             return e
 
