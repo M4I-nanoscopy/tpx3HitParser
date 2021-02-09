@@ -55,8 +55,9 @@ class io:
             self.write.create_dataset('hits', dtype=constants.dt_hit, maxshape=(None,), chunks=shape, data=hits)
         else:
             hits_f = self.write['hits']
-            hits_f.resize(len(hits_f) + len(hits), 0)
-            hits_f[len(hits_f):] = hits
+            old = len(hits_f)
+            hits_f.resize(old + len(hits), 0)
+            hits_f[old:] = hits
 
     def store_hits(self, file_name):
         self.write_base_attributes('hits')
@@ -119,8 +120,9 @@ class io:
             self.write.create_dataset('events', dtype=constants.dt_event, maxshape=(None,), chunks=shape, data=events)
         else:
             events_f = self.write['events']
-            events_f.resize(len(events_f) + len(events), 0)
-            events_f[len(events_f):] = events
+            old = len(events_f)
+            events_f.resize(old + len(events), 0)
+            events_f[old:] = events
 
     def store_events(self, algorithm, cnn_model):
         self.write_base_attributes('events')
