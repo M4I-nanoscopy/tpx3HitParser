@@ -8,7 +8,7 @@ import events
 import lib
 import numpy as np
 
-from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters
+from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters, dt_event
 
 
 class Gpu(Process):
@@ -26,6 +26,7 @@ class Gpu(Process):
         self.clusters = np.zeros((EVENTS_CHUNK_SIZE, 2, self.settings.cluster_matrix_size, self.settings.cluster_matrix_size), dtype=dt_clusters)
         self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=dt_ci)
         self.offset = 0
+        self.n_hits = 0
 
     def run(self):
         # Ignore the interrupt signal. Let parent (orchestrator) handle that.
@@ -54,20 +55,39 @@ class Gpu(Process):
         self.model = load_model(model_path)
 
         while self.keep_processing.is_set():
-            try:
-                data = self.gpu_queue.get(timeout=1)
-            except queue.Empty:
-                continue
+            predictions = self.model.predict(self.yield_clusters_from_queue, steps=10, verbose=0)
 
-            if self.settings.E and self.settings.algorithm == 'cnn':
-                e = self.parse_clusters_gpu(data['clusters'], data['cluster_info'])
+            # Copy all events from cluster_info as base
+            e = self.cluster_info.astype(dt_event)
 
-                if self.settings.store_events and e is not None:
-                    self.store_events(data['n_hits'], e)
-                else:
-                    self.output_queue.put({'n_hits': data['n_hits']})
+            # Add prediction offset from cluster origin
+            e['x'] = e['x'] + predictions[:, 1]
+            e['y'] = e['y'] + predictions[:, 0]
+
+            if self.settings.store_events:
+                self.store_events(self.n_hits, e)
+            else:
+                self.output_queue.put({'n_hits': self.n_hits})
+
+            self.logger.info("Parsed events")
+            self.cluster_info.fill(0)
+
+    def yield_clusters_from_queue(self):
+            data = self.gpu_queue.get(block=False)
+
+            ci = data['cluster_info']
+            c = data['clusters']
+            self.cluster_info[self.offset:self.offset + len(ci)] = ci
+            self.offset += len(ci)
+            self.n_hits += data['n_hits']
+
+            # Delete ToA matrices, required for ToT only CNN
+            if self.settings.tot_only:
+                c = np.delete(c, 1, 1)
 
             self.gpu_queue.task_done()
+
+            yield c
 
     # From clusters to events
     def parse_clusters_gpu(self, cluster_chunk, cluster_info_chunk):
