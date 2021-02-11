@@ -57,7 +57,7 @@ class Writer(Process):
 
     def finalise(self):
         if self.settings.store_hits:
-            self.io.store_hits(self.settings.raw)
+            self.io.store_hits(self.settings.raw, self.settings.hits_tot_correct_file)
 
         if self.settings.store_clusters:
             self.io.store_clusters(self.settings.cluster_time_window, self.settings.cluster_max_sum_tot,

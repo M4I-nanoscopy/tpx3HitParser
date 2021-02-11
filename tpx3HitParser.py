@@ -28,7 +28,7 @@ def main():
     # TODO: Check output file
 
     # Check if we have a loadable ToT correction file
-    c = tpx3format.check_tot_correction(lib.config.settings.hits_tot_correct_file)
+    c = tpx3format.check_tot_correction(settings.hits_tot_correct_file)
     if c is not True:
         logger.error(c)
         return 1
