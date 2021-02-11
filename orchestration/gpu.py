@@ -5,7 +5,6 @@ from multiprocessing import Process
 import queue
 
 import events
-import lib
 import numpy as np
 
 from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters
@@ -88,4 +87,3 @@ class Gpu(Process):
         }
 
         self.output_queue.put(output)
-
