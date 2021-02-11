@@ -1,9 +1,10 @@
 import os
 import queue
 import signal
-from multiprocessing import Queue, Event, JoinableQueue
-from time import sleep
+from multiprocessing import Queue, Event, JoinableQueue, shared_memory
+import numpy
 
+from time import sleep
 import logging
 
 from tqdm import tqdm
@@ -37,12 +38,22 @@ class Orchestrator:
         # Use event to signal to writer we want finalise
         self.finalise_writing = Event()
 
+        # Use shared memory to store the ToT correction data
+        self.tot_correction = None
+
         signal.signal(signal.SIGINT, self.sigint)
 
     def orchestrate(self):
+        # Put the ToT correction array in shared memory
+        if self.settings.hits_tot_correct_file != "0":
+            tc = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
+            self.tot_correction = shared_memory.SharedMemory(create=True, size=tc.nbytes)
+            tc_shared = numpy.ndarray(tc.shape, dtype=tc.dtype, buffer=self.tot_correction.buf)
+            tc_shared[:] = tc[:]
+
         # Build workers to process the input
         for i in range(self.settings.cores):
-            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue, self.gpu_queue)
+            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue, self.gpu_queue, self.tot_correction)
             p.start()
             self.workers.append(p)
 
@@ -143,6 +154,8 @@ class Orchestrator:
         self.gpu_queue.cancel_join_thread()
         self.output_queue.cancel_join_thread()
         self.finished_queue.cancel_join_thread()
+
+        self.tot_correction.unlink()
 
 
 

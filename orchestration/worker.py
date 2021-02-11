@@ -2,6 +2,7 @@ import logging
 import signal
 from multiprocessing import Process
 import queue
+import numpy
 
 import clusters
 import events
@@ -9,7 +10,7 @@ import tpx3format
 
 
 class Worker(Process):
-    def __init__(self, settings, keep_processing, iq, oq, gq):
+    def __init__(self, settings, keep_processing, iq, oq, gq, tc):
         # Setting this process to daemon, makes them killed if the child is killed.
         Process.__init__(self)
 
@@ -21,6 +22,7 @@ class Worker(Process):
         self.logger = logging.getLogger('root')
 
         self.f = None
+        self.tot_correction_shared = tc
         self.tot_correction = None
 
     def run(self):
@@ -77,7 +79,7 @@ class Worker(Process):
     def parse_raw(self, positions):
         # Load ToT correction matrix
         if self.tot_correction is None and self.settings.hits_tot_correct_file != "0":
-            self.tot_correction = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
+            self.tot_correction = numpy.ndarray((1024, 256, 256, 4), dtype=numpy.int16, buffer=self.tot_correction)
 
         hits_chunk = tpx3format.parse_data_packages(positions, self.f, self.tot_correction, self.settings)
 
