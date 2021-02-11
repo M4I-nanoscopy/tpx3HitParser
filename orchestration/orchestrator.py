@@ -107,12 +107,12 @@ class Orchestrator:
         processed_chunks = 0
         while self.keep_processing.is_set() and processed_chunks < n_chunks:
             try:
-                hits_done = self.finished_queue.get(timeout=1)
+                done = self.finished_queue.get(timeout=1)
             except queue.Empty:
                 continue
 
-            processed_chunks += 1
-            self.progress_bar.update(hits_done)
+            processed_chunks += done['chunks']
+            self.progress_bar.update(done['n_hits'])
 
         # Signal to the write we want to finalise the output file
         self.finalise_writing.set()

@@ -2,10 +2,12 @@ import logging
 import os
 import signal
 from multiprocessing import Process
+import queue
+
 import events
 import numpy as np
 
-from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters, dt_event
+from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters
 
 
 class Gpu(Process):
@@ -23,7 +25,7 @@ class Gpu(Process):
         self.clusters = np.zeros((EVENTS_CHUNK_SIZE, 2, self.settings.cluster_matrix_size, self.settings.cluster_matrix_size), dtype=dt_clusters)
         self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=dt_ci)
         self.offset = 0
-        self.n_hits = 0
+        self.chunks = []
 
     def run(self):
         # Ignore the interrupt signal. Let parent (orchestrator) handle that.
@@ -46,65 +48,60 @@ class Gpu(Process):
         self.model = load_model(self.settings.event_cnn_model)
 
         while self.keep_processing.is_set():
-            predictions = self.model.predict(self.yield_clusters_from_queue(), steps=10, verbose=0)
+            try:
+                data = self.gpu_queue.get(timeout=2)
+            except queue.Empty:
+                # The queue is starving, we're most likely near the end, parse final bit
+                self.logger.debug("GPU queue starved")
+                if self.offset > 0:
+                    self.parse_clusters_gpu()
+                continue
 
-            # Copy all events from cluster_info as base
-            e = self.cluster_info.astype(dt_event)
+            self.chunks.append(data['n_hits'])
 
-            # Add prediction offset from cluster origin
-            e['x'] = e['x'] + predictions[self.offset, 1]
-            e['y'] = e['y'] + predictions[self.offset:,0]
+            # Bunch (and parse if needed) clusters
+            self.bunch_clusters(data['clusters'], data['cluster_info'])
 
-            self.offset = 0
-
-            if self.settings.store_events:
-                self.store_events(self.n_hits, e)
-            else:
-                self.output_queue.put({'n_hits': self.n_hits})
-
-            self.logger.info("Parsed events")
-            self.cluster_info.fill(0)
-
-    def yield_clusters_from_queue(self):
-        data = self.gpu_queue.get(block=False)
-
-        ci = data['cluster_info']
-        c = data['clusters']
-        self.cluster_info[self.offset:self.offset + len(ci)] = ci
-        self.offset += len(ci)
-        self.n_hits += data['n_hits']
-
-        # Delete ToA matrices, required for ToT only CNN
-        if self.settings.tot_only:
-            c = np.delete(c, 1, 1)
-
-        self.gpu_queue.task_done()
-
-        yield c
+            self.gpu_queue.task_done()
 
     # From clusters to events
-    def parse_clusters_gpu(self, cluster_chunk, cluster_info_chunk):
-        # TODO: We're not parsing the remainder of clusters here!
+    def bunch_clusters(self, cluster_chunk, cluster_info_chunk):
         # Group clusters together, because it's suboptimal to do event localisation on small batches
         if self.offset + len(cluster_chunk) < EVENTS_CHUNK_SIZE:
             self.clusters[self.offset:self.offset + len(cluster_chunk)] = cluster_chunk
             self.cluster_info[self.offset:self.offset + len(cluster_chunk)] = cluster_info_chunk
             self.offset += len(cluster_chunk)
-
-            return None
         else:
-            e = events.cnn(self.clusters, self.cluster_info, self.model, self.settings.event_cnn_tot_only)
-            self.offset = 0
-            self.clusters[0:len(cluster_chunk)] = cluster_chunk
-            self.cluster_info[0:len(cluster_chunk)] = cluster_info_chunk
+            # First try to process remainder
+            remainder = EVENTS_CHUNK_SIZE - self.offset
+            self.clusters[self.offset:] = cluster_chunk[0:remainder]
+            self.cluster_info[self.offset:] = cluster_info_chunk[0:remainder]
+            self.offset += remainder
 
-            return e
+            # Parse
+            self.parse_clusters_gpu()
 
-    def store_events(self, n_hits, e):
-        output = {
-            'events': e,
-            'n_hits': n_hits
-        }
+            self.clusters[0:len(cluster_chunk) - remainder] = cluster_chunk[remainder:]
+            self.cluster_info[0:len(cluster_info_chunk) - remainder] = cluster_info_chunk[remainder:]
 
-        self.output_queue.put(output)
+    def parse_clusters_gpu(self):
+        # Parse
+        e = events.cnn(self.clusters, self.cluster_info, self.model, self.settings.event_cnn_tot_only)
+        #e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
+
+        if self.settings.store_events:
+            self.output_queue.put({
+                'events': e,
+                'chunks': len(self.chunks),
+                'n_hits': sum(self.chunks)
+            })
+        else:
+            self.output_queue.put({
+                'chunks': len(self.chunks),
+                'n_hits': sum(self.chunks)
+            })
+
+        # Reset
+        self.offset = 0
+        self.chunks = []
 

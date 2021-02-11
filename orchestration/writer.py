@@ -48,7 +48,10 @@ class Writer(Process):
             if self.settings.store_events and 'events' in data:
                 self.write_events(data['events'])
 
-            self.finished_queue.put(data['n_hits'])
+            self.finished_queue.put({
+                'n_hits': data['n_hits'],
+                'chunks': data['chunks'] if 'chunks' in data else 1
+            })
 
             self.output_queue.task_done()
 
