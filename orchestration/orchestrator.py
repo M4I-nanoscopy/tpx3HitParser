@@ -10,6 +10,7 @@ import logging
 from tqdm import tqdm
 
 import tpx3format
+from lib.constants import tot_correction_shape
 from orchestration.gpu import Gpu
 from orchestration.worker import Worker
 from orchestration.writer import Writer
@@ -39,21 +40,18 @@ class Orchestrator:
         self.finalise_writing = Event()
 
         # Use shared memory to store the ToT correction data
-        self.tot_correction = None
+        self.tot_correction_shared = None
 
         signal.signal(signal.SIGINT, self.sigint)
 
     def orchestrate(self):
         # Put the ToT correction array in shared memory
         if self.settings.hits_tot_correct_file != "0":
-            tc = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
-            self.tot_correction = shared_memory.SharedMemory(create=True, size=tc.nbytes)
-            tc_shared = numpy.ndarray(tc.shape, dtype=tc.dtype, buffer=self.tot_correction.buf)
-            tc_shared[:] = tc[:]
+            self.read_tot_correction()
 
         # Build workers to process the input
         for i in range(self.settings.cores):
-            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue, self.gpu_queue, self.tot_correction)
+            p = Worker(self.settings, self.keep_processing, self.input_queue, self.output_queue, self.gpu_queue, self.tot_correction_shared)
             p.start()
             self.workers.append(p)
 
@@ -123,6 +121,13 @@ class Orchestrator:
         # Finished!
         self.progress_bar.close()
         self.logger.info("Finished")
+
+    def read_tot_correction(self):
+        # Store the the ToT correction in shared memory buffer, between the processes
+        tc = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
+        self.tot_correction_shared = shared_memory.SharedMemory(create=True, size=tc.nbytes)
+        tc_shared = numpy.ndarray(tot_correction_shape, dtype=tc.dtype, buffer=self.tot_correction_shared.buf)
+        tc_shared[:] = tc[:]
 
     def sigint(self, signum, frame):
         # Start signalling to child processes that we're terminating early
