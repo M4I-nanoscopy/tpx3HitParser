@@ -45,13 +45,7 @@ class Gpu(Process):
         tf.config.threading.set_intra_op_parallelism_threads(self.settings.cores)
 
         # Load model
-        model_path = self.settings.event_cnn_model
-
-        # TODO: Move this to tpx3HitParser
-        if not os.path.exists(model_path):
-            raise lib.UserConfigException('CNN model %s does not exist.' % model_path)
-
-        self.model = load_model(model_path)
+        self.model = load_model(self.settings.event_cnn_model)
 
         while self.keep_processing.is_set():
             try:

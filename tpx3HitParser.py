@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import sys
 import lib
 import logging
@@ -24,8 +24,12 @@ def main():
     logger.debug(settings)
 
     # TODO: Check input file
-    # TODO: Check CNN model
     # TODO: Check output file
+
+    # Check for CNN model file
+    if settings.E and settings.algorithm == 'cnn' and not os.path.exists(settings.event_cnn_model):
+        logger.error('CNN model %s does not exist.' % settings.event_cnn_model)
+        return 1
 
     # Check if we have a loadable ToT correction file
     c = tpx3format.check_tot_correction(settings.hits_tot_correct_file)
