@@ -60,6 +60,10 @@ class io:
             hits_f[old:] = hits
 
     def store_hits(self, file_name, hits_tot_correct_file):
+        if 'hits' not in self.write:
+            logger.warning("There was no dataset /hits written to the output file. Was nothing processed?")
+            return
+
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
         self.write['hits'].attrs['shape'] = tpx3format.calculate_image_shape()
@@ -91,10 +95,13 @@ class io:
             cm_f[old:] = cm
 
     def store_clusters(self, cluster_time_window, cluster_max_sum_tot, cluster_min_sum_tot, cluster_max_size, cluster_min_size):
-        # self.write_base_attributes('cluster_info')
+        if 'clusters' not in self.write:
+            logger.warning("There was no dataset /clusters written to the output file. Was nothing processed?")
+            return
+
         self.write_base_attributes('clusters')
 
-        self.write['cluster_info'].attrs.update({
+        self.write['clusters'].attrs.update({
             'cluster_time_window': cluster_time_window,
             'cluster_min_sum_tot': cluster_min_sum_tot,
             'cluster_max_sum_tot': cluster_max_sum_tot,
@@ -125,6 +132,10 @@ class io:
             events_f[old:] = events
 
     def store_events(self, algorithm, cnn_model):
+        if 'events' not in self.write:
+            logger.warning("There was no dataset /events written to the output file. Was nothing processed?")
+            return
+
         self.write_base_attributes('events')
         self.write['events'].attrs['algorithm'] = algorithm
         self.write['events'].attrs['shape'] = tpx3format.calculate_image_shape()

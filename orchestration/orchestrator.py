@@ -160,7 +160,9 @@ class Orchestrator:
         self.output_queue.cancel_join_thread()
         self.finished_queue.cancel_join_thread()
 
-        self.tot_correction.unlink()
+        # Close the shared memory
+        if self.tot_correction_shared is not None:
+            self.tot_correction_shared.unlink()
 
 
 
