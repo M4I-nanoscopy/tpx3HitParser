@@ -64,15 +64,14 @@ class Gpu(Process):
 
             self.gpu_queue.task_done()
 
-    # From clusters to events
+    # Group clusters together, because it's suboptimal to do event localisation on small batches
     def bunch_clusters(self, cluster_chunk, cluster_info_chunk):
-        # Group clusters together, because it's suboptimal to do event localisation on small batches
         if self.offset + len(cluster_chunk) < EVENTS_CHUNK_SIZE:
             self.clusters[self.offset:self.offset + len(cluster_chunk)] = cluster_chunk
             self.cluster_info[self.offset:self.offset + len(cluster_chunk)] = cluster_info_chunk
             self.offset += len(cluster_chunk)
         else:
-            # First try to process remainder
+            # First fill up remainder of clusters, and then send this off to parse
             remainder = EVENTS_CHUNK_SIZE - self.offset
             self.clusters[self.offset:] = cluster_chunk[0:remainder]
             self.cluster_info[self.offset:] = cluster_info_chunk[0:remainder]
@@ -81,11 +80,14 @@ class Gpu(Process):
             # Parse
             self.parse_clusters_gpu()
 
-            self.clusters[0:len(cluster_chunk) - remainder] = cluster_chunk[remainder:]
-            self.cluster_info[0:len(cluster_info_chunk) - remainder] = cluster_info_chunk[remainder:]
+            # Store left over of the chunk in a new part
+            new_chunk = len(cluster_chunk) - remainder
+            self.clusters[0:new_chunk] = cluster_chunk[remainder:]
+            self.cluster_info[0:new_chunk] = cluster_info_chunk[remainder:]
+            self.offset = new_chunk
 
+    # Parse and sent to GPU
     def parse_clusters_gpu(self):
-        # Parse
         e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model, self.settings.event_cnn_tot_only)
         #e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
 
