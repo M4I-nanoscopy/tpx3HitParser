@@ -7,7 +7,7 @@ import numpy
 import clusters
 import events
 import tpx3format
-from lib.constants import tot_correction_shape
+from lib.constants import TOT_CORRECTION_SHAPE
 
 
 class Worker(Process):
@@ -80,7 +80,7 @@ class Worker(Process):
     def parse_raw(self, positions):
         # Load ToT correction matrix from shared memory
         if self.tot_correction is None and self.settings.hits_tot_correct_file != "0":
-            self.tot_correction = numpy.ndarray(tot_correction_shape, dtype=numpy.int16, buffer=self.tot_correction_shared.buf)
+            self.tot_correction = numpy.ndarray(TOT_CORRECTION_SHAPE, dtype=numpy.int16, buffer=self.tot_correction_shared.buf)
 
         hits_chunk = tpx3format.parse_data_packages(positions, self.f, self.tot_correction, self.settings)
 

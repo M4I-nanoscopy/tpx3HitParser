@@ -10,7 +10,7 @@ import logging
 from tqdm import tqdm
 
 import tpx3format
-from lib.constants import tot_correction_shape
+from lib.constants import TOT_CORRECTION_SHAPE
 from orchestration.gpu import Gpu
 from orchestration.worker import Worker
 from orchestration.writer import Writer
@@ -126,7 +126,7 @@ class Orchestrator:
         # Store the the ToT correction in shared memory buffer, between the processes
         tc = tpx3format.read_tot_correction(self.settings.hits_tot_correct_file)
         self.tot_correction_shared = shared_memory.SharedMemory(create=True, size=tc.nbytes)
-        tc_shared = numpy.ndarray(tot_correction_shape, dtype=tc.dtype, buffer=self.tot_correction_shared.buf)
+        tc_shared = numpy.ndarray(TOT_CORRECTION_SHAPE, dtype=tc.dtype, buffer=self.tot_correction_shared.buf)
         tc_shared[:] = tc[:]
 
     def sigint(self, signum, frame):

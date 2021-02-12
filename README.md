@@ -86,7 +86,6 @@ constants:
   --cluster_chunk_size N         Number of hits to consider at once (memory intensive!) (default:
                                  6000)
   --cluster_matrix_size N        Size of the resulting cluster matrix (default: 10)
-  --event_chunk_size N           Number of events to process at once (default: 10000)
   --event_cnn_model FILE         CNN model to use for event localisation (default: model-200kv-
                                  tottoa.h5)
   --event_cnn_tot_only 0/1       The specified CNN model uses ToT only (default: False)

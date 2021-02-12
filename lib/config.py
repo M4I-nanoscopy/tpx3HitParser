@@ -98,7 +98,6 @@ def parse_config(argv=None):
     misc_group = parser.add_argument_group('miscellaneous arguments')
     misc_group.add_argument("--cluster_stats", action='store_true', help='Store cluster stats')
     misc_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
-    misc_group.add_argument("--freq_toa", action='store_true', help="Parse and store delta-ToA frequency matrix")
 
     # Constants
     c_group = parser.add_argument_group('constants')
@@ -119,7 +118,6 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
                                  help='Number of hits to consider at once (memory intensive!)')
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
-    c_group.add_argument("--event_chunk_size", type=int, metavar='N', help='Number of events to process at once')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
     c_group.add_argument("--event_cnn_tot_only", metavar='0/1', type=str2bool, help='The specified CNN model uses ToT only')
     c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')

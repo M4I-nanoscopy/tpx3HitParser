@@ -155,7 +155,7 @@ def cnn(cluster_matrix, cluster_info, model, tot_only):
         raise Exception
 
     # Run CNN prediction
-    predictions = model.predict(cluster_matrix, batch_size=lib.config.settings.event_chunk_size, verbose=0)
+    predictions = model.predict(cluster_matrix, batch_size=EVENTS_CHUNK_SIZE, verbose=0)
 
     # Copy all events from cluster_info as base
     events = cluster_info[()].astype(dt_event)
