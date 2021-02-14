@@ -11,7 +11,7 @@ logger = logging.getLogger('root')
 
 def find_clusters(settings, hits):
     # Outsource the main cluster finding routine to a Rust compiled library
-    hits_stacked = np.stack((hits['x'], hits['y'], hits['cToA']), axis=-1).astype('int64')
+    hits_stacked = np.stack((hits['x'], hits['y'], hits['ToA']), axis=-1).astype('int64')
     labels = clfind(hits_stacked)
 
     # This takes the cluster labels, and take their hits, and converts it into a list of clusters with their hits
@@ -62,7 +62,7 @@ def build_cluster(c, settings, i, cm, ci):
     m_size = settings.cluster_matrix_size
 
     # Base cTOA value
-    min_ctoa = min(c['cToA'])
+    min_ctoa = min(c['ToA'])
 
     # Base x and y value
     min_x = min(c['x'])
@@ -70,7 +70,7 @@ def build_cluster(c, settings, i, cm, ci):
 
     rows = c['y'] - min_y
     cols = c['x'] - min_x
-    dtoa = c['cToA'] - min_ctoa
+    dtoa = c['ToA'] - min_ctoa
 
     try:
         # TODO: We're throwing away the information which pixels have not been hit, but this function is fast!
@@ -83,7 +83,6 @@ def build_cluster(c, settings, i, cm, ci):
     ci[i]['chipId'] = c[0]['chipId']
     ci[i]['x'] = min_x
     ci[i]['y'] = min_y
-    ci[i]['TSPIDR'] = c[0]['TSPIDR']
-    ci[i]['cToA'] = min_ctoa
+    ci[i]['ToA'] = min_ctoa
 
 

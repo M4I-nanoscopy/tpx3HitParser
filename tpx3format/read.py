@@ -280,7 +280,7 @@ def parse_data_packages(positions, f, tot_correction, settings):
     if settings.hits_combine_chips:
         combine_chips(hits, settings.hits_cross_extra_offset)
 
-    hits = np.sort(hits, 0, 'stable', 'cToA')
+    hits = np.sort(hits, 0, 'stable', 'ToA')
 
     return hits
 
@@ -298,45 +298,50 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
         logger.error('Failed reading data package at position %d of file (error: %s)' % (pos[0], str(e)))
         return
 
-    time = pixels[0] & 0xffff
-
-    if pixels[0] >> 60 == 0xb and pos[2] < 4:
-        for i, pixel in enumerate(pixels):
-            dcol = (pixel & 0x0FE0000000000000) >> 52
-            spix = (pixel & 0x001F800000000000) >> 45
-            pix = (pixel & 0x0000700000000000) >> 44
-
-            x = int(dcol + pix / 4)
-            y = int(spix + (pix & 0x3))
-            ToA = int((pixel >> (16 + 14)) & 0x3fff)
-            ToT = int((pixel >> (16 + 4)) & 0x3ff)
-            fToA = int((pixel >> 16) & 0xf)
-
-            # Combine coarse ToA (ToA) with fine ToA (fToA) to form the combined ToA (cToA)
-            CToA = (ToA << 4) | (~fToA & 0xf)
-
-            if toa_phase_correction > 0:
-                # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
-                CToA = CToA + 16
-
-                if toa_phase_correction == 1:
-                    CToA = apply_toa_railroad_correction_phase1_um(x, CToA, pos[2])
-                elif toa_phase_correction == 2:
-                    CToA = apply_toa_railroad_correction_phase1_basel(x, CToA, pos[2])
-                elif toa_phase_correction == 3:
-                    CToA = apply_toa_phase2_correction(x, CToA)
-                    CToA = apply_toa_railroad_correction_phase2(x, CToA)
-
-            # Apply ToT correction matrix, when requested
-            if tot_correction is not None:
-                ToT_correct = int(ToT) + apply_tot_correction(tot_correction, ToT, y, x, pos[2])
-            else:
-                ToT_correct = ToT
-
-            if ToT_correct < tot_threshold:
-                yield None
-            else:
-                yield (pos[2], x, y, ToT_correct, CToA, time)
-    else:
+    if pixels[0] >> 60 != 0xb:
         logger.error('Failed parsing data package at position %d of file' % pos[0])
         yield None
+        return
+
+    for i, pixel in enumerate(pixels):
+        col = (pixel & 0x0FE0000000000000) >> 52
+        super_pix = (pixel & 0x001F800000000000) >> 45
+        pix = (pixel & 0x0000700000000000) >> 44
+
+        x = int(col + pix / 4)
+        y = int(super_pix + (pix & 0x3))
+        spidr_time = (pixel & 0xffff)
+        coarse_toa = (pixel >> (16 + 14) & 0x3fff)
+        tot = int((pixel >> (16 + 4)) & 0x3ff)
+        fine_toa = (pixel >> 16) & 0xf
+
+        # Combine coarse ToA with fine ToA to form the combined ToA
+        toa = int((coarse_toa << 4) | (~fine_toa & 0xf))
+
+        # Check if we would like to correct for phase shifts in the ToA values
+        if toa_phase_correction > 0:
+            # Shifting all cToA one full cycle forward, as I do not want to go below zero due to the correction
+            toa = toa + 16
+
+            if toa_phase_correction == 1:
+                toa = apply_toa_railroad_correction_phase1_um(x, toa, pos[2])
+            elif toa_phase_correction == 2:
+                toa = apply_toa_railroad_correction_phase1_basel(x, toa, pos[2])
+            elif toa_phase_correction == 3:
+                toa = apply_toa_phase2_correction(x, toa)
+                toa = apply_toa_railroad_correction_phase2(x, toa)
+
+        # Calculate the full time using the combined info of the SPIDR time, the (corrected) coarse toa and the fine toa
+        global_time = int((spidr_time << 18) | toa)
+
+        # Apply ToT correction matrix, when requested
+        if tot_correction is not None:
+            tot_correct = tot + apply_tot_correction(tot_correction, tot, y, x, pos[2])
+        else:
+            tot_correct = tot
+
+        if tot_correct < tot_threshold:
+            yield None
+        else:
+            yield pos[2], x, y, tot_correct, global_time
+

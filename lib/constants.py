@@ -8,8 +8,7 @@ dt_hit = numpy.dtype([
     ('x', numpy.uint16),
     ('y', numpy.uint16),
     ('ToT', numpy.uint16),
-    ('cToA', numpy.uint16),
-    ('TSPIDR', numpy.uint16),
+    ('ToA', numpy.int64)
 ])
 HITS_CHUNK_SIZE = 10_000_000
 
@@ -18,8 +17,7 @@ dt_ci = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.uint16),
     ('y', numpy.uint16),
-    ('cToA', numpy.uint16),
-    ('TSPIDR', numpy.uint16)
+    ('ToA', numpy.int64),
 ])
 dt_clusters = 'uint16'
 
@@ -30,8 +28,7 @@ dt_event = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.float64),
     ('y', numpy.float64),
-    ('cToA', numpy.uint16),
-    ('TSPIDR', numpy.uint16)
+    ('ToA', numpy.int64)
 ])
 EVENTS_CHUNK_SIZE = 100_000
 

@@ -131,7 +131,7 @@ def parse_config(argv=None):
     if settings.C and not (settings.raw or settings.hits):
         parser.error('Either --hits or --raw is required when parsing clusters (-C)')
 
-    if (settings.freq_tot or settings.freq_toa) and settings.hits_combine_chips:
+    if settings.freq_tot and settings.hits_combine_chips:
         parser.error('When building --freq_toa or --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
 
 
