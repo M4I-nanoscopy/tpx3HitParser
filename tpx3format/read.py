@@ -15,10 +15,12 @@ logger = logging.getLogger('root')
 def read_positions(f):
     control_events = []
     i = 0
+    rollover_counter = 0
+    approaching_rollover = False
+    leaving_rollover = False
     while True:
         b = f.read(8)
         cursor = f.tell()
-        position = []
 
         if not b:
             # Reached EOF
@@ -42,6 +44,34 @@ def read_positions(f):
         pkg = struct.unpack("<Q", f.read(8))[0]
         pkg_type = pkg >> 60
 
+        # The SPIDR time is 16 bit (65536). It has a rollover time of 26.843 seconds
+        time = pkg & 0xffff
+        rollover = rollover_counter
+
+        # Check if the time is nearing the limit of the rollover
+        if time > 0.9 * 65536.:
+            if leaving_rollover:
+                # We have already increased the rollover counter, so we need to reset it
+                rollover = rollover_counter - 1
+            elif not approaching_rollover:
+                # We must be approaching it
+                logger.debug("Approaching SPIDR timer rollover")
+                approaching_rollover = True
+
+        # We have been approaching the rollover, so if now see a low time, it probably is a rollover
+        if approaching_rollover and time < 0.01 * 65536.:
+            logger.debug("SPIDR timer rollover")
+            approaching_rollover = False
+            leaving_rollover = True
+            rollover_counter += 1
+            rollover = rollover_counter
+
+        # We are leaving the rollover, but we're far away by now
+        if leaving_rollover and time < 0.1 * 65536.:
+            logger.debug("Leaving SPIDR timer rollover")
+            approaching_rollover = False
+            leaving_rollover = False
+
         # Parse the different package types
         if pkg_type == 0x7:
             control_event = parse_control_packet(pkg, size)
@@ -56,7 +86,7 @@ def read_positions(f):
             # Heartbeat packages are always followed by a 0x7145 or 0x7144 control package, and then possibly
             # pixels. Continue to parse those pixels, but strip away the control package
             if size - (8*2) > 0:
-                position = [cursor+16, size-(8*2), chip_nr]
+                yield [cursor+16, size-(8*2), chip_nr, rollover]
 
         elif pkg_type == 0x6:
             pass
@@ -64,12 +94,10 @@ def read_positions(f):
             # TODO: Use TDC packages
             # tdc = parse_tdc_packet(pkg)
         elif pkg_type == 0xb:
-            position = [cursor, size, chip_nr]
+            yield [cursor, size, chip_nr, rollover]
             i += 1
         else:
             logger.warning("Found packet with unknown type %d" % pkg_type)
-
-        yield position
 
         # Skip over the data packets and to the next header
         f.seek(cursor + size, 0)
@@ -331,8 +359,11 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
                 toa = apply_toa_phase2_correction(x, toa)
                 toa = apply_toa_railroad_correction_phase2(x, toa)
 
-        # Calculate the full time using the combined info of the SPIDR time, the (corrected) coarse toa and the fine toa
-        global_time = int((spidr_time << 18) | toa)
+        # Calculate the full time by using the combined info of:
+        #   * the SPIDR time (16 bit)
+        #   * the (corrected) coarse toa (14 bit) and the fine toa (4 bit)
+        #   * the SPIDR rollover timer (pos[3])
+        global_time = int((spidr_time << 18) | toa | (pos[3] << 34))
 
         # Apply ToT correction matrix, when requested
         if tot_correction is not None:
