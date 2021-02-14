@@ -16,6 +16,12 @@ class io:
     def __init__(self):
         pass
 
+    def check_write(self, file_name, overwrite):
+        if os.path.exists(file_name) and not overwrite:
+            return "Output file already exists and --overwrite not specified."
+        else:
+            return True
+
     def open_write(self, file_name, overwrite):
         if os.path.exists(file_name) and not overwrite:
             raise lib.IOException("Output file already exists and --overwrite not specified.")

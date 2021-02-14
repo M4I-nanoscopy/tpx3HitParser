@@ -24,7 +24,11 @@ def main():
     logger.debug(settings)
 
     # TODO: Check input file
-    # TODO: Check output file
+
+    c = io.check_write(settings.output, settings.overwrite)
+    if c is not True:
+        logger.error(c)
+        return 1
 
     # Check for CNN model file
     if settings.E and settings.algorithm == 'cnn' and not os.path.exists(settings.event_cnn_model):
