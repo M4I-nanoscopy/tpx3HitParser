@@ -67,7 +67,7 @@ def read_positions(f):
             rollover = rollover_counter
 
         # We are leaving the rollover, but we're far away by now
-        if leaving_rollover and time < 0.1 * 65536.:
+        if leaving_rollover and time > 0.1 * 65536.:
             logger.debug("Leaving SPIDR timer rollover")
             approaching_rollover = False
             leaving_rollover = False
