@@ -130,8 +130,8 @@ def parse_config(argv=None):
     if settings.E and not settings.C:
         parser.error('Parsing clusters (-C) is required when parsing events (-E)')
 
-    if settings.freq_tot and settings.hits_combine_chips:
-        parser.error('When building --freq_toa or --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+    # if settings.freq_tot and settings.hits_combine_chips:
+    #     parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
 
 
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse
