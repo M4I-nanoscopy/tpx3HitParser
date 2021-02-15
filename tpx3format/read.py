@@ -344,7 +344,7 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
         fine_toa = (pixel >> 16) & 0xf
 
         # Combine coarse ToA with fine ToA to form the combined ToA
-        toa = int((coarse_toa << 4) | (~fine_toa & 0xf))
+        toa = int(coarse_toa << 4) - int(fine_toa)
 
         # Check if we would like to correct for phase shifts in the ToA values
         if toa_phase_correction > 0:

@@ -5,6 +5,7 @@ import lib
 import logging
 import orchestration
 import tpx3format
+import numpy
 
 logger = lib.setup_custom_logger('root', logging.INFO)
 
@@ -49,7 +50,18 @@ def main():
         # We hit an exception or are done, terminate workers and progress bar
         orchestrator.cleanup()
 
-    # Post event parsing corrections ###
+    # Post parsing correction utilities ###
+
+    # ToA sorting for hits and (TODO) events
+    if settings.hits_sort_toa:
+        logger.info('Start sorting hits data on ToA...')
+        hits = io.read_hits(settings.output)
+        hits = numpy.sort(hits, 0, 'stable', 'ToA')
+        io.open_write(settings.output, overwrite=False, append=True)
+        io.replace_hits(hits)
+        io.close_write()
+        logger.info('Finished sorting hits data on ToA.')
+
     # TODO: Reimplement these options
     # # Super Resolution
     # if settings.correct_super_res:

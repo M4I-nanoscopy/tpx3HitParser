@@ -22,12 +22,17 @@ class io:
         else:
             return True
 
-    def open_write(self, file_name, overwrite):
-        if os.path.exists(file_name) and not overwrite:
+    def open_write(self, file_name, overwrite=False, append=False):
+        if os.path.exists(file_name) and not (overwrite or append):
             raise lib.IOException("Output file already exists and --overwrite not specified.")
 
+        if append:
+            mode = 'a'
+        else:
+            mode = 'w'
+
         try:
-            self.write = h5py.File(file_name, 'w')
+            self.write = h5py.File(file_name, mode)
         except IOError as e:
             raise lib.IOException("Could not open file for writing: %s" % str(e))
 
@@ -76,6 +81,9 @@ class io:
 
         if hits_tot_correct_file != "0":
             self.write['hits'].attrs['tot_correction_file'] = hits_tot_correct_file
+
+    def replace_hits(self, hits):
+        self.write['hits'][...] = hits
 
     def del_hits(self):
         del self.write['hits']
