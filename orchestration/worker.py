@@ -40,8 +40,13 @@ class Worker(Process):
 
             hits = self.parse_raw(positions)
 
+            output = {
+                'n_hits': len(hits),
+                'intermediate': False
+            }
+
             if self.settings.store_hits:
-                self.store_hits(hits)
+                output['hits'] = hits
 
             # TODO: Reimplement freq_tot
             # if self.settings.freq_tot:
@@ -49,25 +54,26 @@ class Worker(Process):
             #     io.store_freq_tot(freq_tot)
 
             if self.settings.C:
-                clusters, cluster_info = self.parse_hits(hits)
+                cl, cl_info = self.parse_hits(hits)
 
                 if self.settings.store_clusters:
-                    self.store_clusters(len(hits), clusters, cluster_info)
+                    if self.settings.store_clusters:
+                        output['clusters'] = cl
+                        output['cluster_info'] = cl_info
 
                 if self.settings.E:
                     if self.settings.algorithm != 'cnn':
-                        e = self.parse_clusters(clusters, cluster_info)
+                        e = self.parse_clusters(cl, cl_info)
 
                         if self.settings.store_events:
-                            self.store_events(len(hits), e)
+                            output['events'] = e
                     else:
                         # Send of to dedicated GPU process
-                        self.gpu_queue.put({'clusters': clusters, 'cluster_info': cluster_info, 'n_hits': len(hits)})
+                        self.gpu_queue.put({'clusters': cl, 'cluster_info': cl_info, 'n_hits': len(hits)})
+                        # Need to signal to write class that this chunk is not finished yet
+                        output['intermediate'] = True
 
-            # TODO: Figure out if this is pretty
-            if not self.settings.store_hits and not self.settings.store_clusters and not self.settings.store_events:
-                self.output_queue.put({'n_hits': len(hits)})
-
+            self.output_queue.put(output)
             self.input_queue.task_done()
 
         # Cleanup
@@ -97,29 +103,3 @@ class Worker(Process):
         e = events.localise_events(clusters, cluster_info, self.settings.algorithm)
 
         return e
-
-    def store_hits(self, hits):
-        output = {
-            'hits': hits,
-            'n_hits': len(hits)
-        }
-
-        self.output_queue.put(output)
-
-    def store_clusters(self, n_hits, clusters, cluster_info):
-        output = {
-            'clusters': clusters,
-            'cluster_info': cluster_info,
-            'n_hits': n_hits
-        }
-
-        self.output_queue.put(output)
-
-    def store_events(self, n_hits, e):
-        output = {
-            'events': e,
-            'n_hits': n_hits
-        }
-
-        self.output_queue.put(output)
-

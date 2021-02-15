@@ -88,19 +88,21 @@ class Gpu(Process):
 
     # Parse and sent to GPU
     def parse_clusters_gpu(self):
-        e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model, self.settings.event_cnn_tot_only)
-        #e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
+        #e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model, self.settings.event_cnn_tot_only)
+        e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
 
         if self.settings.store_events:
             self.output_queue.put({
                 'events': e,
                 'chunks': len(self.chunks),
-                'n_hits': sum(self.chunks)
+                'n_hits': sum(self.chunks),
+                'intermediate': False
             })
         else:
             self.output_queue.put({
                 'chunks': len(self.chunks),
-                'n_hits': sum(self.chunks)
+                'n_hits': sum(self.chunks),
+                'intermediate': False
             })
 
         # Reset
