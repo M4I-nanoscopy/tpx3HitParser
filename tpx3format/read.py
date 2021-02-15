@@ -254,6 +254,7 @@ def apply_toa_phase2_correction(x, cToA):
 
     return cToA
 
+
 def calculate_image_shape():
     return 512 + 2 * lib.config.settings.hits_cross_extra_offset
 

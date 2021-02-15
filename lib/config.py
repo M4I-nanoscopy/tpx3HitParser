@@ -68,9 +68,9 @@ def parse_config(argv=None):
     input_group = parser.add_argument_group('input arguments')
     input_group_excl = input_group.add_mutually_exclusive_group(required=True)
     input_group_excl.add_argument("--raw", metavar='FILE', help="Read raw .tpx3")
-    input_group_excl.add_argument("--hits", metavar='FILE', help="Read .h5 file containing /hits")
-    input_group_excl.add_argument("--clusters", metavar='FILE', help="Read .h5 file containing /clusters")
-    input_group_excl.add_argument("--events", metavar='FILE', help="Read .h5 file containing /events")
+    # input_group_excl.add_argument("--hits", metavar='FILE', help="Read .h5 file containing /hits")
+    # input_group_excl.add_argument("--clusters", metavar='FILE', help="Read .h5 file containing /clusters")
+    # input_group_excl.add_argument("--events", metavar='FILE', help="Read .h5 file containing /events")
 
     # Parse options
     parse_group = parser.add_argument_group('parse arguments')
@@ -83,21 +83,16 @@ def parse_config(argv=None):
     output_group.add_argument("--overwrite", action='store_true', help='Overwrite existing HDF5 file')
     output_group.add_argument("--store_hits", action='store_true', help="Store /hits in output file")
     output_group.add_argument("--store_clusters", action='store_true', help="Store /clusters in output file")
-    output_group.add_argument("--store_cluster_indices", action='store_true', help="Store /cluster_index in output "
-                                                                                   "file (for determining Delta ToA "
-                                                                                   "correction)")
     output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
-    output_group.add_argument("--store_predictions", action='store_true', help="Store /predictions in output file")
+    # output_group.add_argument("--store_predictions", action='store_true', help="Store /predictions in output file")
 
-    # Correct options
-    correct_group = parser.add_argument_group('correct arguments')
-    correct_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
-    correct_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
-
-    # Misc options
-    misc_group = parser.add_argument_group('miscellaneous arguments')
-    misc_group.add_argument("--cluster_stats", action='store_true', help='Store cluster stats')
-    misc_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
+    # Post process options
+    post_process_group = parser.add_argument_group('post processing')
+    post_process_group.add_argument("--hits_sort_toa", type=str2bool, metavar='0/1', help='Sort hit data on ToA')
+    post_process_group.add_argument("--event_sort_toa", type=str2bool, metavar='0/1', help='Sort event data on ToA')
+    # post_process_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
+    # post_process_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
+    # post_process_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
 
     # Constants
     c_group = parser.add_argument_group('constants')
@@ -107,17 +102,14 @@ def parse_config(argv=None):
     c_group.add_argument("--hits_combine_chips",metavar='0/1', type=str2bool, help='Combine the chips to one matrix')
     c_group.add_argument("--hits_cross_extra_offset", metavar='N', type=int, help='Extra offset used for the cross pixels per chip when combining the chips')
     c_group.add_argument("--hits_tot_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
-    c_group.add_argument("--hits_ftoa_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
     c_group.add_argument("--hits_toa_phase_correction", type=int, metavar='N', help='Apply ToA correction. 0=None, 1=Maastricht-Pll30, 2=Basel-Pll30, 3=Pll94')
     c_group.add_argument("--hits_tot_threshold", type=int, metavar='N', help='Below this ToT threshold hits are not stored')
-    c_group.add_argument("--hits_sort_toa", type=str2bool, metavar='0/1', help='Below this ToT threshold hits are not stored')
-    c_group.add_argument("--cluster_time_window", type=int, metavar='N', help='Maximum time interval between individual hits to cluster them (in cToA values)')
-    c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size' )
-    c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size' )
-    c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot' )
+    c_group.add_argument("--cluster_time_window", type=int, metavar='N', help='Maximum time interval between individual hits to cluster them (in fine ToA values=1.56ns)')
+    c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size')
+    c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size')
+    c_group.add_argument("--cluster_max_sum_tot", type=int, metavar='N', help='Maximum cluster sum tot')
     c_group.add_argument("--cluster_min_sum_tot", type=int, metavar='N', help='Minimum cluster sum tot')
-    c_group.add_argument("--cluster_chunk_size", type=int, metavar='N',
-                                 help='Number of hits to consider at once (memory intensive!)')
+    c_group.add_argument("--cluster_chunk_size", type=int, metavar='N',  help='Number of hits to consider at once for clustering.')
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
     c_group.add_argument("--event_cnn_tot_only", metavar='0/1', type=str2bool, help='The specified CNN model uses ToT only')
@@ -129,8 +121,14 @@ def parse_config(argv=None):
     global settings
     settings = parser.parse_args(remaining_argv)
 
-    if settings.C and not (settings.raw or settings.hits):
-        parser.error('Either --hits or --raw is required when parsing clusters (-C)')
+    if settings.store_clusters and not settings.C:
+        parser.error('Parsing clusters (-C) is required when storing clusters (--store_clusters)')
+
+    if settings.store_events and not settings.E:
+        parser.error('Parsing events (-E) is required when storing events (--store_events)')
+
+    if settings.E and not settings.C:
+        parser.error('Parsing clusters (-C) is required when parsing events (-E)')
 
     if settings.freq_tot and settings.hits_combine_chips:
         parser.error('When building --freq_toa or --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
