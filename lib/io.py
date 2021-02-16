@@ -18,7 +18,7 @@ class io:
 
     def check_write(self, file_name, overwrite):
         if os.path.exists(file_name) and not overwrite:
-            return "Output file already exists and --overwrite not specified."
+            return "Output file %s already exists and --overwrite not specified." % file_name
         else:
             return True
 
