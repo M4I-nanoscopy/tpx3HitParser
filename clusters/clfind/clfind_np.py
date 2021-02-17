@@ -1,7 +1,7 @@
 import numpy as np
-time_window = 50
 
-def clfind_sub(i, h0, c_id, start_idx, max_idx, ls, hs):
+
+def clfind_sub(i, h0, c_id, start_idx, max_idx, ls, hs, time_window):
     x0, y0, t0 = h0
 
     # Mark cluster in labels
@@ -31,13 +31,13 @@ def clfind_sub(i, h0, c_id, start_idx, max_idx, ls, hs):
 
         if abs(x0 - x1) <= 1 and abs(y0 - y1) <= 1:
             # Recursively find more hits belonging to this same cluster
-            new_start_idx, new_max_idx = clfind_sub(j, h1, c_id, new_start_idx, max_idx, ls, hs)
+            new_start_idx, new_max_idx = clfind_sub(j, h1, c_id, new_start_idx, max_idx, ls, hs, time_window)
             max_idx = max(new_max_idx, j)
 
     return new_start_idx, max_idx
 
 
-def clfind(hits):
+def clfind(hits, time_window):
     labels = np.full(len(hits), -1)
     cluster_index = 0
     s = 0
@@ -45,7 +45,7 @@ def clfind(hits):
     i = 0
     while i < len(hits):
         if labels[i] == -1:
-            s, m = clfind_sub(i, hits[i], cluster_index, s, m, labels, hits)
+            s, m = clfind_sub(i, hits[i], cluster_index, s, m, labels, hits, time_window)
 
             i = max(s, i)
             #print("s: %d, m: %d" % (s, m))

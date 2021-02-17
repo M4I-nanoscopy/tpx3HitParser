@@ -11,11 +11,11 @@ mod clfind;
 #[pymodule]
 fn libclfind(_py: Python, m: &PyModule) -> PyResult<()> {
     #[pyfn(m, "clfind")]
-    #[text_signature = "(hits)"]
+    #[text_signature = "(hits, time_window)"]
     fn py_clfind(
-        py: Python, hits: &PyArray2<i64>,
+        py: Python, hits: &PyArray2<i64>, time_window: i64
     ) -> PyResult<Py<PyArray1<i64>>> {
-        let labels: ndarray::Array1<i64> = clfind::clfind(hits.readonly().as_array());
+        let labels: ndarray::Array1<i64> = clfind::clfind(hits.readonly().as_array(), time_window);
         Ok(labels.to_pyarray(py).to_owned())
     }
 

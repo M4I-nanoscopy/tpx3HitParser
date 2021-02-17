@@ -12,7 +12,7 @@ logger = logging.getLogger('root')
 def find_clusters(settings, hits):
     # Outsource the main cluster finding routine to a Rust compiled library
     hits_stacked = np.stack((hits['x'], hits['y'], hits['ToA']), axis=-1).astype('int64')
-    labels = clfind(hits_stacked)
+    labels = clfind(hits_stacked, settings.cluster_time_window)
 
     # This takes the cluster labels, and take their hits, and converts it into a list of clusters with their hits
     idx = labels.argsort()
