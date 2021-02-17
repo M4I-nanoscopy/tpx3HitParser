@@ -1,0 +1,11 @@
+unstable_features = true
+blank_lines_upper_bound = 2
+max_width = 80
+brace_style = "SameLineWhere"
+fn_args_layout = "Compressed"
+edition = "2018"
+merge_imports = true
+reorder_impl_items = true
+combine_control_expr = false
+indent_style = "Block"
+# fn_args_indent = "Visual"

@@ -1,0 +1,22 @@
+[package]
+name = "clfind"
+version = "1.0.0"
+authors = ["Paul van Schayck, Ian Anthony"]
+edition = "2018"
+
+[lib]
+name = "clfind"
+crate-type = ["cdylib"]
+
+[dependencies]
+ndarray = "0.14"
+numpy = "0.13"
+
+[dependencies.pyo3]
+version = "0.13"
+features = ["extension-module"]
+
+[profile.release]
+codegen-units = 1
+lto = true
+panic = "abort"

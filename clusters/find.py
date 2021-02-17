@@ -1,7 +1,7 @@
 import lib
 import logging
 
-from clusters.clfind_rust import clfind
+from clusters.clfind import clfind
 from lib.constants import *
 import numpy as np
 import scipy.sparse
