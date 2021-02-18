@@ -15,6 +15,8 @@ A minimal version of Python 3.8 is needed (due to use of multiprocessing.shared_
 ```
 python3 -m venv tpx3-py3
 source tpx3-py3/bin/activate
+pip install pip --upgrade
+pip install wheel
 ```
 Install Python dependencies
 ```
