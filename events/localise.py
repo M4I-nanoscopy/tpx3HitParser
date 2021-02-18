@@ -3,10 +3,9 @@ import random
 from scipy import ndimage
 
 import tpx3format
+from lib import UserConfigException
 from lib.constants import *
 import numpy as np
-import os
-import lib
 from tqdm import tqdm
 
 # https://github.com/tqdm/tqdm/issues/481
@@ -148,7 +147,7 @@ def cnn(cluster_matrix, cluster_info, model, tot_only):
         logger.error(
             'Cluster matrix shape %s does not match model shape %s. Change cluster_matrix_size or use --event_cnn_tot_only?' % (
                 cluster_matrix.shape, model.layers[0].input_shape))
-        raise Exception
+        raise UserConfigException
 
     # Run CNN prediction
     predictions = model.predict(cluster_matrix, batch_size=EVENTS_CHUNK_SIZE, verbose=0)

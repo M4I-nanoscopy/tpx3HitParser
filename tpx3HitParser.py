@@ -24,8 +24,12 @@ def main():
     # Print config statements
     logger.debug(settings)
 
-    # TODO: Check input file
+    # Check input
+    if not os.path.exists(settings.raw):
+        logger.error("Input file %s does not exist." % settings.raw)
+        return 1
 
+    # Basic output check (output writing can still fail on other factors (like no permissions)
     c = io.check_write(settings.output, settings.overwrite)
     if c is not True:
         logger.error(c)
@@ -42,8 +46,8 @@ def main():
         logger.error(c)
         return 1
 
+    # Start main processing
     orchestrator = orchestration.Orchestrator(settings)
-
     try:
         orchestrator.orchestrate()
     finally:
@@ -52,7 +56,7 @@ def main():
 
     # Post parsing correction utilities ###
 
-    # ToA sorting for hits and (TODO) events
+    # ToA sorting for hits and events
     if settings.hits_sort_toa:
         logger.info('Start sorting hits data on ToA...')
         hits = io.read_hits(settings.output)
@@ -61,6 +65,15 @@ def main():
         io.replace_hits(hits)
         io.close_write()
         logger.info('Finished sorting hits data on ToA.')
+
+    if settings.event_sort_toa:
+        logger.info('Start sorting event data on ToA...')
+        events = io.read_events(settings.output)
+        events = numpy.sort(events, 0, 'stable', 'ToA')
+        io.open_write(settings.output, overwrite=False, append=True)
+        io.replace_events(events)
+        io.close_write()
+        logger.info('Finished sorting event data on ToA.')
 
     # TODO: Reimplement these options
     # # Super Resolution

@@ -156,6 +156,9 @@ class io:
         if algorithm == 'cnn':
             self.write['events'].attrs['cnn_model'] = cnn_model
 
+    def replace_events(self, events):
+        self.write['events'][...] = events
+
     def store_predictions(self, predictions, algorithm):
         name = '/predictions/%s' % algorithm
         self.write.create_dataset(name, data=predictions)
