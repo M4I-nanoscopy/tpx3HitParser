@@ -10,6 +10,8 @@ cd tpx3HitParser
 Recommended way is to use a Python virtualenv, but this is optional.
 
 ### Python 3
+A minimal version of Python 3.8 is needed (due to use of multiprocessing.shared_memory).
+
 ```
 python3 -m venv tpx3-py3
 source tpx3-py3/bin/activate

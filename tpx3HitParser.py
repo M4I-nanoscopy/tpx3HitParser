@@ -7,6 +7,10 @@ import orchestration
 import tpx3format
 import numpy
 
+MIN_PYTHON = (3, 8)
+if sys.version_info < MIN_PYTHON:
+    sys.exit("Python %s.%s or later is required.\n" % MIN_PYTHON)
+
 logger = lib.setup_custom_logger('root', logging.INFO)
 
 
