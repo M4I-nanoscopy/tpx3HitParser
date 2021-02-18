@@ -106,7 +106,7 @@ class Orchestrator:
 
         processed_chunks = 0
         while self.keep_processing.is_set() and processed_chunks < n_chunks:
-            if not self.are_childs_alive():
+            if not self.are_children_alive():
                 self.logger.fatal("One (or all) of the workers failed. End processing")
                 self.keep_processing.clear()
                 break
@@ -134,7 +134,7 @@ class Orchestrator:
         tc_shared = numpy.ndarray(TOT_CORRECTION_SHAPE, dtype=tc.dtype, buffer=self.tot_correction_shared.buf)
         tc_shared[:] = tc[:]
 
-    def are_childs_alive(self):
+    def are_children_alive(self):
         for worker in self.workers:
             if not worker.is_alive():
                 self.logger.debug("Worker is no longer alive...")
