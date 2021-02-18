@@ -51,10 +51,9 @@ class Gpu(Process):
             try:
                 data = self.gpu_queue.get(timeout=2)
             except queue.Empty:
-                # The queue is starving, we're most likely near the end, parse final bit
+                # The queue is starving, we're most likely near the end, parse anything we still have saved up
                 self.logger.debug("GPU queue starved")
-                if self.offset > 0:
-                    self.parse_clusters_gpu()
+                self.parse_clusters_gpu()
                 continue
 
             self.chunks.append(data['n_hits'])
@@ -89,7 +88,7 @@ class Gpu(Process):
     # Parse and sent to GPU
     def parse_clusters_gpu(self):
         e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model, self.settings.event_cnn_tot_only)
-        #e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
+        # e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
 
         if self.settings.store_events:
             self.output_queue.put({
