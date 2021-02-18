@@ -362,9 +362,10 @@ def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correcti
 
         # Calculate the full time by using the combined info of:
         #   * the SPIDR time (16 bit)
-        #   * the (corrected) coarse toa (14 bit) and the fine toa (4 bit)
         #   * the SPIDR rollover timer (pos[3])
-        global_time = int((spidr_time << 18) | toa | (pos[3] << 34))
+        #   * the (corrected) combination of coarse toa (14 bit) and the fine toa (4 bit)
+        # The ToA can be negative, so this is added using arithmetic operation
+        global_time = int((spidr_time << 18) | (pos[3] << 34)) + toa
 
         # Apply ToT correction matrix, when requested
         if tot_correction is not None:
