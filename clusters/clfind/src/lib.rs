@@ -1,9 +1,4 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
-use ndarray::prelude::*;
-use numpy::{IntoPyArray, PyArray1, PyArray2, ToPyArray};
+use numpy::{PyArray1, PyArray2, ToPyArray};
 use pyo3::prelude::{pymodule, Py, PyModule, PyResult, Python};
 
 mod clfind;

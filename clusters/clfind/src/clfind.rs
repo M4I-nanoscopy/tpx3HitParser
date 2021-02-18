@@ -1,4 +1,4 @@
-use ndarray::{arr1, arr2, Array1, ArrayView2, Axis};
+use ndarray::{Array1, ArrayView2, Axis};
 
 pub fn clfind(hits: ArrayView2<i64>, time_window: i64) -> ndarray::Array1<i64> {
     let mut labels = Array1::from_elem(hits.len_of(Axis(0)), -1);
@@ -60,7 +60,7 @@ fn clfind_sub(
 
         // Look for neighbor, and if found search for its neighbors recursively
         if ((x0 - x1).abs() <= 1) && ((y0 - y1).abs() <= 1) {
-            let tmp_start_idx = clfind_sub(j, h1, c_id, start_idx, ls, hs, time_window);
+            clfind_sub(j, h1, c_id, start_idx, ls, hs, time_window);
         }
     }
 }
