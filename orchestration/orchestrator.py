@@ -106,6 +106,11 @@ class Orchestrator:
 
         processed_chunks = 0
         while self.keep_processing.is_set() and processed_chunks < n_chunks:
+            if not self.are_childs_alive():
+                self.logger.fatal("One (or all) of the workers failed. End processing")
+                self.keep_processing.clear()
+                break
+
             try:
                 done = self.finished_queue.get(timeout=1)
             except queue.Empty:
@@ -114,7 +119,7 @@ class Orchestrator:
             processed_chunks += done['chunks']
             self.progress_bar.update(done['n_hits'])
 
-        # Signal to the write we want to finalise the output file
+        # Signal to the writer we want to finalise the output file
         self.finalise_writing.set()
         self.writer.join()
 
@@ -129,9 +134,27 @@ class Orchestrator:
         tc_shared = numpy.ndarray(TOT_CORRECTION_SHAPE, dtype=tc.dtype, buffer=self.tot_correction_shared.buf)
         tc_shared[:] = tc[:]
 
+    def are_childs_alive(self):
+        for worker in self.workers:
+            if not worker.is_alive():
+                self.logger.debug("Worker is no longer alive...")
+                return False
+
+        if not self.writer.is_alive():
+            self.logger.debug("Writer is no longer alive...")
+            return False
+
+        if self.gpu is not None and not self.gpu.is_alive():
+            self.logger.debug("Gpu is no longer alive...")
+            return False
+
+        return True
+
     def sigint(self, signum, frame):
         # Start signalling to child processes that we're terminating early
         self.keep_processing.clear()
+        self.logger.debug("Waiting 2s for workers to stop...")
+        sleep(2)
         # self.cleanup() is being called by the finally of the caller
 
     def cleanup(self):
@@ -139,8 +162,6 @@ class Orchestrator:
         self.progress_bar.close()
 
         # Allow workers to finish their job
-        self.logger.debug("Waiting 2s for workers to stop...")
-        sleep(2)
         for worker in self.workers:
             worker.terminate()
             worker.join()
