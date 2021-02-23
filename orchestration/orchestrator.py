@@ -153,8 +153,8 @@ class Orchestrator:
     def sigint(self, signum, frame):
         # Start signalling to child processes that we're terminating early
         self.keep_processing.clear()
-        self.logger.debug("Waiting 2s for workers to stop...")
-        sleep(2)
+        self.logger.debug("Waiting 1s for workers to stop...")
+        sleep(1)
         # self.cleanup() is being called by the finally of the caller
 
     def cleanup(self):
