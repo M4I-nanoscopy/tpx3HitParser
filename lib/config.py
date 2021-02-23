@@ -6,8 +6,6 @@ import os
 
 logger = logging.getLogger('root')
 
-settings = None
-
 
 def parse_config(argv=None):
     # Do argv default this way, as doing it in the functional
@@ -117,7 +115,6 @@ def parse_config(argv=None):
     # Misc
     parser.add_argument("-v", "--verbose", action='store_true', help='Verbose output')
 
-    global settings
     settings = parser.parse_args(remaining_argv)
 
     if settings.store_clusters and not settings.C:
@@ -131,6 +128,8 @@ def parse_config(argv=None):
 
     # if settings.freq_tot and settings.hits_combine_chips:
     #     parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+
+    return settings
 
 
 # https://stackoverflow.com/questions/15008758/parsing-boolean-values-with-argparse

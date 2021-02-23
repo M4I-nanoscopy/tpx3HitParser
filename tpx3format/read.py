@@ -5,7 +5,6 @@ import h5py
 import numpy as np
 
 from lib.constants import *
-import lib
 import os
 
 # TODO: Logging does not work for multiprocessing processes on Windows
@@ -255,8 +254,8 @@ def apply_toa_phase2_correction(x, cToA):
     return cToA
 
 
-def calculate_image_shape():
-    return 512 + 2 * lib.config.settings.hits_cross_extra_offset
+def calculate_image_shape(hits_cross_extra_offset):
+    return 512 + 2 * hits_cross_extra_offset
 
 
 def combine_chips(hits, hits_cross_extra_offset):

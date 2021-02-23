@@ -16,8 +16,7 @@ logger = lib.setup_custom_logger('root', logging.INFO)
 
 def main():
     # Parse all command line arguments
-    lib.parse_config()
-    settings = lib.config.settings
+    settings = lib.parse_config()
 
     if settings.verbose:
         log_level = logging.DEBUG

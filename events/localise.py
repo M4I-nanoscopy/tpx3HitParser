@@ -137,7 +137,7 @@ def calculate_tot(cluster_matrix, cluster_info):
     return events
 
 
-def cnn(cluster_matrix, cluster_info, model, tot_only):
+def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
     # Delete ToA matrices, required for ToT only CNN
     if tot_only:
         cluster_matrix = np.delete(cluster_matrix, 1, 1)
@@ -159,7 +159,7 @@ def cnn(cluster_matrix, cluster_info, model, tot_only):
     events['x'] = events['x'] + predictions[:, 1]
     events['y'] = events['y'] + predictions[:, 0]
 
-    shape = tpx3format.calculate_image_shape()
+    shape = tpx3format.calculate_image_shape(hits_cross_extra_offset)
 
     # Check for events outside matrix shape, and delete those
     ind_del = (events['x'] > shape) | (events['y'] > shape)

@@ -62,7 +62,7 @@ class Writer(Process):
 
     def finalise(self):
         if self.settings.store_hits:
-            self.io.store_hits(self.settings.raw, self.settings.hits_tot_correct_file)
+            self.io.store_hits(self.settings.raw, self.settings.hits_tot_correct_file, self.settings.hits_cross_extra_offset)
 
         if self.settings.store_clusters:
             self.io.store_clusters(self.settings.cluster_time_window, self.settings.cluster_max_sum_tot,
@@ -70,7 +70,7 @@ class Writer(Process):
                                    self.settings.cluster_max_size, self.settings.cluster_min_size)
 
         if self.settings.store_events:
-            self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model)
+            self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model, self.settings.hits_cross_extra_offset)
 
         self.io.close_write()
 
