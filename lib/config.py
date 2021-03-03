@@ -82,6 +82,8 @@ def parse_config(argv=None):
     output_group.add_argument("--store_clusters", action='store_true', help="Store /clusters in output file")
     output_group.add_argument("--store_events", action='store_true', help="Store /events in output file")
     # output_group.add_argument("--store_predictions", action='store_true', help="Store /predictions in output file")
+    output_group.add_argument("--cluster_stats", action='store_true', help="Add the cluster sumToT and nHits to cluster_info")
+
 
     # Post process options
     post_process_group = parser.add_argument_group('post processing')

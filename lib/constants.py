@@ -13,12 +13,18 @@ dt_hit = numpy.dtype([
 HITS_CHUNK_SIZE = 10_000_000
 
 # Cluster info key indices
-dt_ci = numpy.dtype([
+dt_ci_base = [
     ('chipId', numpy.uint8),
     ('x', numpy.uint16),
     ('y', numpy.uint16),
     ('ToA', numpy.int64),
-])
+]
+
+dt_ci_extended = [
+    ('sumToT', numpy.uint16),
+    ('nHits', numpy.uint8)
+]
+
 dt_clusters = 'uint16'
 
 CLUSTER_CHUNK_SIZE = 100_000

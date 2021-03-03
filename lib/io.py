@@ -7,8 +7,9 @@ import lib
 import tpx3format
 from lib import constants
 
-logger = logging.getLogger('root')
+import clusters
 
+logger = logging.getLogger('root')
 
 class io:
     write = None
@@ -88,9 +89,9 @@ class io:
     def del_hits(self):
         del self.write['hits']
 
-    def write_cluster_chunk(self, ci, cm, cms):
+    def write_cluster_chunk(self, ci, cm, cms, cluster_stats):
         if 'cluster_info' not in self.write:
-            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
+            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=clusters.cluster_info_datatype(cluster_stats), maxshape=(None,),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
             self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype=constants.dt_clusters,
                                       maxshape=(None, 2, cms, cms),
