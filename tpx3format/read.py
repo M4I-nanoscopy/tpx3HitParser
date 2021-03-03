@@ -136,11 +136,11 @@ def parse_control_packet(pkg, size):
         logger.warning("Control data packet is followed by more data. This is unexpected")
 
     if control_type == CONTROL_END_OF_COMMAND:
-        logger.info('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+        logger.debug('EndOfCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
     elif control_type == CONTROL_END_OF_READOUT:
-        logger.info('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+        logger.debug('EndOfReadOut on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
     elif control_type == CONTROL_END_OF_SEQUANTIAL_COMMAND:
-        logger.info('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
+        logger.debug('EndOfResetSequentialCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
     elif control_type == CONTROL_OTHER_CHIP_COMMAND:
         logger.debug('OtherChipCommand on chip ID %04x at SPIDR_TIME %5d' % (chip_id, time))
     else:
