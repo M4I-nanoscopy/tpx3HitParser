@@ -5,17 +5,10 @@ from multiprocessing import Process
 import queue
 
 import events
+import clusters
 import numpy as np
 
-from lib.constants import EVENTS_CHUNK_SIZE, dt_ci_base, dt_ci_extended, dt_clusters
-
-def cluster_info_datatype(cluster_stats):
-    dt = dt_ci_base
-
-    if cluster_stats:
-        dt.extend(dt_ci_extended)
-
-    return np.dtype(dt)
+from lib.constants import EVENTS_CHUNK_SIZE, dt_clusters
 
 
 class Gpu(Process):
@@ -31,7 +24,7 @@ class Gpu(Process):
 
         self.model = None
         self.clusters = np.zeros((EVENTS_CHUNK_SIZE, 2, self.settings.cluster_matrix_size, self.settings.cluster_matrix_size), dtype=dt_clusters)
-        self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=cluster_info_datatype(cluster_stats))
+        self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=clusters.cluster_info_datatype(self.settings.cluster_stats))
         self.offset = 0
         self.chunks = []
 
