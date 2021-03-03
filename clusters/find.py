@@ -82,9 +82,10 @@ def build_cluster(c, settings, i, cm, ci):
     ci[i]['x'] = min_x
     ci[i]['y'] = min_y
     ci[i]['ToA'] = min_ctoa
-    if (settings.cluster_stats):
+
+    if settings.cluster_stats:
         ci[i]['sumToT'] = np.sum(c['ToT'])
-        ci[i]['nHits'] = np.count_nonzero(c['ToT'])
+        ci[i]['nHits'] = len(c)
 
 
 def cluster_info_datatype(cluster_stats):
@@ -94,4 +95,3 @@ def cluster_info_datatype(cluster_stats):
         dt = dt + dt_ci_extended
 
     return numpy.dtype(dt)
-
