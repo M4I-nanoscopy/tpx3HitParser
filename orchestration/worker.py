@@ -100,6 +100,6 @@ class Worker(Process):
 
     # From clusters to events
     def parse_clusters(self, clusters, cluster_info):
-        e = events.localise_events(clusters, cluster_info, self.settings.algorithm)
+        e = events.localise_events(clusters, cluster_info, self.settings.algorithm, self.settings)
 
         return e

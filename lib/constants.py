@@ -34,8 +34,21 @@ dt_event = numpy.dtype([
     ('chipId', numpy.uint8),
     ('x', numpy.float64),
     ('y', numpy.float64),
-    ('ToA', numpy.int64)
+    ('ToA', numpy.int64),
 ])
+
+dt_event_base = [
+    ('chipId', numpy.uint8),
+    ('x', numpy.float64),
+    ('y', numpy.float64),
+    ('ToA', numpy.int64),
+]
+
+dt_event_extended = [
+    ('sumToT', numpy.uint16),
+    ('nHits', numpy.uint8)
+]
+
 EVENTS_CHUNK_SIZE = 100_000
 
 # Control events
