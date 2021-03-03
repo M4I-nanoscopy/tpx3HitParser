@@ -88,8 +88,10 @@ def build_cluster(c, settings, i, cm, ci):
 
 
 def cluster_info_datatype(cluster_stats):
-   dt = dt_ci_base
-   if (cluster_stats and len(dt)<5):
-       dt.extend(dt_ci_extended)
-   return numpy.dtype(dt)   
+    dt = dt_ci_base
+
+    if cluster_stats:
+        dt = dt + dt_ci_extended
+
+    return numpy.dtype(dt)
 
