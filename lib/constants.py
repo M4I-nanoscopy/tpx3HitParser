@@ -19,7 +19,6 @@ dt_ci_base = [
     ('y', numpy.uint16),
     ('ToA', numpy.int64),
 ]
-
 dt_ci_extended = [
     ('sumToT', numpy.uint16),
     ('nHits', numpy.uint8)
@@ -30,20 +29,12 @@ dt_clusters = 'uint16'
 CLUSTER_CHUNK_SIZE = 100_000
 
 # Event matrix key indices
-dt_event = numpy.dtype([
-    ('chipId', numpy.uint8),
-    ('x', numpy.float64),
-    ('y', numpy.float64),
-    ('ToA', numpy.int64),
-])
-
 dt_event_base = [
     ('chipId', numpy.uint8),
     ('x', numpy.float64),
     ('y', numpy.float64),
     ('ToA', numpy.int64),
 ]
-
 dt_event_extended = [
     ('sumToT', numpy.uint16),
     ('nHits', numpy.uint8)

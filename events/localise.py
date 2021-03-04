@@ -147,7 +147,7 @@ def calculate_tot(cluster_matrix, cluster_info, events, cluster_stats):
     return events
 
 
-def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
+def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset, cluster_stats):
     # Delete ToA matrices, required for ToT only CNN
     if tot_only:
         cluster_matrix = np.delete(cluster_matrix, 1, 1)
@@ -163,7 +163,7 @@ def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
     predictions = model.predict(cluster_matrix, batch_size=EVENTS_CHUNK_SIZE, verbose=0)
 
     # Copy all events from cluster_info as base
-    events = cluster_info[()].astype(dt_event)
+    events = cluster_info[()].astype(event_info_datatype(cluster_stats))
 
     # Add prediction offset from cluster origin
     events['x'] = events['x'] + predictions[:, 1]
