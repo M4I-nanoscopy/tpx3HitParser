@@ -99,7 +99,7 @@ class Worker(Process):
         return cm_chunk, ci_chunk
 
     # From clusters to events
-    def parse_clusters(self, clusters, cluster_info):
-        e = events.localise_events(clusters, cluster_info, self.settings.algorithm, self.settings)
+    def parse_clusters(self, cl, cluster_info):
+        e = events.localise_events(cl, cluster_info, self.settings.algorithm, self.settings.cluster_stats)
 
         return e

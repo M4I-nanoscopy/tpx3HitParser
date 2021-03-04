@@ -136,10 +136,10 @@ class io:
         del self.write['cluster_info']
         del self.write['clusters']
 
-    def write_event_chunk(self, events, event_stats):
+    def write_event_chunk(self, events, cluster_stats):
         if 'events' not in self.write:
             shape = (constants.EVENTS_CHUNK_SIZE,)
-            self.write.create_dataset('events', dtype=ev.event_info_datatype(event_stats), maxshape=(None,), chunks=shape, data=events)
+            self.write.create_dataset('events', dtype=ev.event_info_datatype(cluster_stats), maxshape=(None,), chunks=shape, data=events)
         else:
             events_f = self.write['events']
             old = len(events_f)
