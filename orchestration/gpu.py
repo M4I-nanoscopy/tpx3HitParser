@@ -5,9 +5,10 @@ from multiprocessing import Process
 import queue
 
 import events
+import clusters
 import numpy as np
 
-from lib.constants import EVENTS_CHUNK_SIZE, dt_ci, dt_clusters
+from lib.constants import EVENTS_CHUNK_SIZE, dt_clusters
 
 
 class Gpu(Process):
@@ -23,7 +24,7 @@ class Gpu(Process):
 
         self.model = None
         self.clusters = np.zeros((EVENTS_CHUNK_SIZE, 2, self.settings.cluster_matrix_size, self.settings.cluster_matrix_size), dtype=dt_clusters)
-        self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=dt_ci)
+        self.cluster_info = np.zeros(EVENTS_CHUNK_SIZE, dtype=clusters.cluster_info_datatype(self.settings.cluster_stats))
         self.offset = 0
         self.chunks = []
 
@@ -87,8 +88,11 @@ class Gpu(Process):
 
     # Parse and sent to GPU
     def parse_clusters_gpu(self):
-        e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model, self.settings.event_cnn_tot_only, self.settings.hits_cross_extra_offset)
-        # e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid')
+        e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model,
+                       self.settings.event_cnn_tot_only, self.settings.hits_cross_extra_offset,
+                       self.settings.cluster_stats
+                       )
+        # e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid', self.settings.cluster_stats)
 
         if self.settings.store_events:
             self.output_queue.put({

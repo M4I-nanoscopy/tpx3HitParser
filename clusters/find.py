@@ -8,7 +8,6 @@ import scipy.sparse
 
 logger = logging.getLogger('root')
 
-
 def find_clusters(settings, hits):
     # Outsource the main cluster finding routine to a Rust compiled library
     hits_stacked = np.stack((hits['x'], hits['y'], hits['ToA']), axis=-1).astype('int64')
@@ -22,8 +21,7 @@ def find_clusters(settings, hits):
 
     # Build the maximum size clusters we expect, before filtering
     cm_chunk = np.zeros((len(clusters), 2, settings.cluster_matrix_size, settings.cluster_matrix_size), dt_clusters)
-    ci_chunk = np.zeros(len(clusters), dtype=dt_ci)
-
+    ci_chunk = np.zeros(len(clusters), dtype=cluster_info_datatype(settings.cluster_stats))
     # Loop over all clusters
     i = 0
     for cluster in clusters:
@@ -85,4 +83,15 @@ def build_cluster(c, settings, i, cm, ci):
     ci[i]['y'] = min_y
     ci[i]['ToA'] = min_ctoa
 
+    if settings.cluster_stats:
+        ci[i]['sumToT'] = np.sum(c['ToT'])
+        ci[i]['nHits'] = len(c)
 
+
+def cluster_info_datatype(cluster_stats):
+    dt = dt_ci_base
+
+    if cluster_stats:
+        dt = dt + dt_ci_extended
+
+    return numpy.dtype(dt)

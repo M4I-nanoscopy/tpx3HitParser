@@ -78,8 +78,8 @@ class Writer(Process):
         self.io.write_hit_chunk(hits)
 
     def write_clusters(self, cluster_info, clusters):
-        self.io.write_cluster_chunk(cluster_info, clusters, self.settings.cluster_matrix_size)
+        self.io.write_cluster_chunk(cluster_info, clusters, self.settings.cluster_matrix_size, self.settings.cluster_stats)
 
     def write_events(self, e):
-        self.io.write_event_chunk(e)
+        self.io.write_event_chunk(e, self.settings.cluster_stats)
 

@@ -3,36 +3,36 @@ import random
 from scipy import ndimage
 
 import tpx3format
-from lib import UserConfigException
+from lib.exceptions import UserConfigException
 from lib.constants import *
 import numpy as np
-from tqdm import tqdm
-
-# https://github.com/tqdm/tqdm/issues/481
-tqdm.monitor_interval = 0
 
 logger = logging.getLogger('root')
 
 
-def localise_events(cluster_matrix, cluster_info, method):
+def localise_events(cluster_matrix, cluster_info, method, cluster_stats):
     logger.debug("Started event localization on %d events using method %s" % (len(cluster_info), method))
 
+    events = np.empty(len(cluster_info), event_info_datatype(cluster_stats))
+
+    # TODO: The events matrix could be seeded by the clusters_info matrix. Like this:
+    # events = cluster_info[()].astype(dt_event)
+
     if method == "centroid":
-        events = calculate_centroid(cluster_matrix, cluster_info)
+        events = calculate_centroid(cluster_matrix, cluster_info, events, cluster_stats)
     elif method == "random":
-        events = calculate_random(cluster_matrix, cluster_info)
+        events = calculate_random(cluster_matrix, cluster_info, events, cluster_stats)
     elif method == "highest_toa":
-        events = calculate_toa(cluster_matrix, cluster_info)
+        events = calculate_toa(cluster_matrix, cluster_info, events, cluster_stats)
     elif method == "highest_tot":
-        events = calculate_tot(cluster_matrix, cluster_info)
+        events = calculate_tot(cluster_matrix, cluster_info, events, cluster_stats)
     else:
         raise Exception("Chosen localisation algorithm ('%s') does not exist" % method)
 
     return events
 
-def calculate_centroid(cluster_matrix, cluster_info):
-    events = np.empty(len(cluster_info), dtype=dt_event)
 
+def calculate_centroid(cluster_matrix, cluster_info, events, cluster_stats):
     # Raise runtime warnings, instead of printing them
     numpy.seterr(all='raise')
 
@@ -53,12 +53,14 @@ def calculate_centroid(cluster_matrix, cluster_info):
 
         events[idx]['ToA'] = cluster_info[idx]['ToA']
 
+        if cluster_stats:
+            events[idx]['sumToT'] = cluster_info[idx]['sumToT']
+            events[idx]['nHits'] = cluster_info[idx]['nHits']
+
     return events
 
 
-def calculate_random(cluster_matrix, cluster_info):
-    events = np.empty(len(cluster_info), dtype=dt_event)
-
+def calculate_random(cluster_matrix, cluster_info, events, cluster_stats):
     for idx, cluster in enumerate(cluster_matrix):
         nzy, nzx = np.nonzero(cluster[0])
 
@@ -80,12 +82,14 @@ def calculate_random(cluster_matrix, cluster_info):
 
         events[idx]['ToA'] = cluster_info[idx]['ToA']
 
+        if cluster_stats:
+            events[idx]['sumToT'] = cluster_info[idx]['sumToT']
+            events[idx]['nHits'] = cluster_info[idx]['nHits']
+
     return events
 
 
-def calculate_toa(cluster_matrix, cluster_info):
-    events = np.empty(len(cluster_info), dtype=dt_event)
-
+def calculate_toa(cluster_matrix, cluster_info, events, cluster_stats):
     for idx, cluster in enumerate(cluster_matrix):
         if np.max(cluster[1]) == 0:
             logger.debug("Could not calculate highest_toa: empty ToA cluster Picking random ToT pixel. Cluster_info: %s" % cluster_info[idx])
@@ -115,12 +119,14 @@ def calculate_toa(cluster_matrix, cluster_info):
 
         events[idx]['ToA'] = cluster_info[idx]['ToA']
 
+        if cluster_stats:
+            events[idx]['sumToT'] = cluster_info[idx]['sumToT']
+            events[idx]['nHits'] = cluster_info[idx]['nHits']
+
     return events
 
 
-def calculate_tot(cluster_matrix, cluster_info):
-    events = np.empty(len(cluster_info), dtype=dt_event)
-
+def calculate_tot(cluster_matrix, cluster_info, events, cluster_stats):
     for idx, cluster in enumerate(cluster_matrix):
         i = np.argmax(cluster[0])
         y, x = np.unravel_index(i, cluster[0].shape)
@@ -134,10 +140,14 @@ def calculate_tot(cluster_matrix, cluster_info):
 
         events[idx]['ToA'] = cluster_info[idx]['ToA']
 
+        if cluster_stats:
+            events[idx]['sumToT'] = cluster_info[idx]['sumToT']
+            events[idx]['nHits'] = cluster_info[idx]['nHits']
+
     return events
 
 
-def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
+def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset, cluster_stats):
     # Delete ToA matrices, required for ToT only CNN
     if tot_only:
         cluster_matrix = np.delete(cluster_matrix, 1, 1)
@@ -153,7 +163,7 @@ def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
     predictions = model.predict(cluster_matrix, batch_size=EVENTS_CHUNK_SIZE, verbose=0)
 
     # Copy all events from cluster_info as base
-    events = cluster_info[()].astype(dt_event)
+    events = cluster_info[()].astype(event_info_datatype(cluster_stats))
 
     # Add prediction offset from cluster origin
     events['x'] = events['x'] + predictions[:, 1]
@@ -171,3 +181,12 @@ def cnn(cluster_matrix, cluster_info, model, tot_only, hits_cross_extra_offset):
         logger.debug('Removed %d events found outside image matrix shape (%d).' % (deleted, shape))
 
     return events
+
+
+def event_info_datatype(cluster_stats):
+    dt = dt_event_base
+
+    if cluster_stats:
+        dt = dt + dt_event_extended
+
+    return numpy.dtype(dt)

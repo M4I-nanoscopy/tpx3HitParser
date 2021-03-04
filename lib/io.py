@@ -7,8 +7,10 @@ import lib
 import tpx3format
 from lib import constants
 
-logger = logging.getLogger('root')
+import clusters
+import events as ev
 
+logger = logging.getLogger('root')
 
 class io:
     write = None
@@ -88,9 +90,9 @@ class io:
     def del_hits(self):
         del self.write['hits']
 
-    def write_cluster_chunk(self, ci, cm, cms):
+    def write_cluster_chunk(self, ci, cm, cms, cluster_stats):
         if 'cluster_info' not in self.write:
-            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=constants.dt_ci, maxshape=(None,),
+            self.write.create_dataset('cluster_info', shape=(len(ci),), dtype=clusters.cluster_info_datatype(cluster_stats), maxshape=(None,),
                                       chunks=(constants.CLUSTER_CHUNK_SIZE,), data=ci)
             self.write.create_dataset('clusters', shape=(len(cm), 2, cms, cms), dtype=constants.dt_clusters,
                                       maxshape=(None, 2, cms, cms),
@@ -134,10 +136,10 @@ class io:
         del self.write['cluster_info']
         del self.write['clusters']
 
-    def write_event_chunk(self, events):
+    def write_event_chunk(self, events, cluster_stats):
         if 'events' not in self.write:
             shape = (constants.EVENTS_CHUNK_SIZE,)
-            self.write.create_dataset('events', dtype=constants.dt_event, maxshape=(None,), chunks=shape, data=events)
+            self.write.create_dataset('events', dtype=ev.event_info_datatype(cluster_stats), maxshape=(None,), chunks=shape, data=events)
         else:
             events_f = self.write['events']
             old = len(events_f)
