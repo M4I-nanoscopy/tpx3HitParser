@@ -6,10 +6,6 @@ import tpx3format
 from lib.exceptions import UserConfigException
 from lib.constants import *
 import numpy as np
-from tqdm import tqdm
-
-# https://github.com/tqdm/tqdm/issues/481
-tqdm.monitor_interval = 0
 
 logger = logging.getLogger('root')
 
