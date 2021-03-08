@@ -150,7 +150,7 @@ def parse_control_packet(pkg, size):
 
 
 def check_tot_correction(correct_file):
-    if correct_file == "0":
+    if correct_file == "0" or correct_file is None:
         # No ToT correction requested
         return True
 
