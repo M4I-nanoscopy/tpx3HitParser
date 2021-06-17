@@ -21,6 +21,8 @@ class Orchestrator:
     gpu = None
     workers = []
     progress_bar = None
+    old_sigint_handler = None
+
 
     def __init__(self, settings):
         self.settings = settings
@@ -42,7 +44,8 @@ class Orchestrator:
         # Use shared memory to store the ToT correction data
         self.tot_correction_shared = None
 
-        signal.signal(signal.SIGINT, self.sigint)
+        # Set own interupt handler
+        self.old_sigint_handler = signal.signal(signal.SIGINT, self.sigint)
 
     def orchestrate(self):
         # Put the ToT correction array in shared memory
@@ -184,6 +187,9 @@ class Orchestrator:
         # Close the shared memory
         if self.tot_correction_shared is not None:
             self.tot_correction_shared.unlink()
+
+        # Restore old sigint handler
+        signal.signal(signal.SIGINT, self.old_sigint_handler)
 
 
 
