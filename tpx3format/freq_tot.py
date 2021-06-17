@@ -1,30 +1,24 @@
 import logging
 import multiprocessing
-
 import numpy as np
 from tqdm import tqdm
-
 import lib
-from lib.constants import HITS_CHUNK_SIZE
-
-# https://github.com/tqdm/tqdm/issues/481
-tqdm.monitor_interval = 0
 
 logger = logging.getLogger('root')
 
 
-def build_freq_tot(hits):
+def build_freq_tot(hits, cores):
     logger.info("Determine and store ToT frequency matrix")
 
     # Setup pool
-    pool = multiprocessing.Pool(lib.config.settings.cores, initializer=lib.init_worker)
+    pool = multiprocessing.Pool(cores)
     results = {}
 
     # Progress bar
     progress_bar = tqdm(total=len(hits), unit="hits", smoothing=0.1, unit_scale=True)
 
     # First split hits in chunks
-    chunk_size = HITS_CHUNK_SIZE
+    chunk_size = int(len(hits) / cores / 5)
     if chunk_size > len(hits):
         logger.warning("Hits chunk size is larger than amount of hits")
         chunk_size = len(hits)

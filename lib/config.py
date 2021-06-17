@@ -90,7 +90,7 @@ def parse_config(argv=None):
     post_process_group.add_argument("--event_sort_toa", type=str2bool, metavar='0/1', help='Sort event data on ToA')
     # post_process_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
     # post_process_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
-    # post_process_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
+    post_process_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
 
     # Constants
     c_group = parser.add_argument_group('constants')
@@ -127,8 +127,8 @@ def parse_config(argv=None):
     if settings.E and not settings.C:
         parser.error('Parsing clusters (-C) is required when parsing events (-E)')
 
-    # if settings.freq_tot and settings.hits_combine_chips:
-    #     parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+    if settings.freq_tot and settings.hits_combine_chips:
+         parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
 
     return settings
 

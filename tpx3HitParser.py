@@ -103,6 +103,15 @@ def main():
     # if settings.store_predictions:
     #     io.store_predictions(events.calculate_predictions(e, cluster_info), settings.algorithm)
 
+    if settings.freq_tot:
+        logger.info('Start building ToT frequency matrix...')
+        io.open_write(settings.output, overwrite=False, append=True)
+        hits = io.write['hits'][()]
+        freq_tot = tpx3format.build_freq_tot(hits, settings.cores)
+        io.store_freq_tot(freq_tot)
+        io.close_write()
+        logger.info('Finished building ToT frequency matrix.')
+
     return 0
 
 
