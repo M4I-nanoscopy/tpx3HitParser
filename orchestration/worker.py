@@ -48,11 +48,6 @@ class Worker(Process):
             if self.settings.store_hits:
                 output['hits'] = hits
 
-            # TODO: Reimplement freq_tot
-            # if self.settings.freq_tot:
-            #     freq_tot = tpx3format.build_freq_tot(hits)
-            #     io.store_freq_tot(freq_tot)
-
             if self.settings.C:
                 cl, cl_info = self.parse_hits(hits)
 

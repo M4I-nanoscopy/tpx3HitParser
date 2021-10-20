@@ -43,7 +43,7 @@ def build_freq_tot(hits, cores):
     freq_tot = np.zeros((512 * 512, 1024), dtype='uint32')
 
     for idx in range(0, len(results)):
-        freq_tot_chunk = results[idx].get(timeout=1000)
+        freq_tot_chunk = results[idx].get()
 
         progress_bar.update(chunk_size)
 
