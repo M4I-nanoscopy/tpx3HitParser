@@ -38,11 +38,13 @@ class Worker(Process):
             except queue.Empty:
                 continue
 
-            hits = self.parse_raw(positions)
+            hits, min_toa, max_toa = self.parse_raw(positions)
 
             output = {
                 'n_hits': len(hits),
-                'intermediate': False
+                'intermediate': False,
+                'min_toa': min_toa,
+                'max_toa': max_toa
             }
 
             if self.settings.store_hits:
@@ -83,9 +85,9 @@ class Worker(Process):
         if self.tot_correction is None and self.settings.hits_tot_correct_file != "0":
             self.tot_correction = numpy.ndarray(TOT_CORRECTION_SHAPE, dtype=numpy.int16, buffer=self.tot_correction_shared.buf)
 
-        hits_chunk = tpx3format.parse_data_packages(positions, self.f, self.tot_correction, self.settings)
+        hits_chunk, min_toa, max_toa = tpx3format.parse_data_packages(positions, self.f, self.tot_correction, self.settings)
 
-        return hits_chunk
+        return hits_chunk, min_toa, max_toa
 
     # From hits to clusters
     def parse_hits(self, hits):

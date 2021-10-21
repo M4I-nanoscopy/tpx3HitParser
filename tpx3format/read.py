@@ -287,6 +287,24 @@ def combine_chips(hits, hits_cross_extra_offset):
     hits['y'][ind] = 255 - hits['y'][ind] + offset
 
 
+def marker_pixel(hits, pixel):
+    # Find hits of the marker pixel
+    ind = (hits['chipId'] == pixel['chipId']) & (hits['x'] == pixel['x']) & (hits['y'] == pixel['y'])
+
+    # Marker pixel not found in chunk
+    if np.count_nonzero(ind) == 0:
+        return hits, -1, -1
+
+    min_toa = np.min(hits[ind]['ToA'])
+    max_toa = np.max(hits[ind]['ToA'])
+
+    # Delete all hits from this marker pixel
+    indices = np.arange(len(hits))
+    hits = np.delete(hits, indices[ind], axis=0)
+
+    return hits, min_toa, max_toa
+
+
 def parse_data_packages(positions, f, tot_correction, settings):
     # Allocate space for storing hits
     n_hits = sum(pos[1] // 8 for pos in positions)
@@ -302,6 +320,8 @@ def parse_data_packages(positions, f, tot_correction, settings):
     # There may have been hits that were not parsed (failed package), resize those empty rows away.
     hits.resize((i,), refcheck=False)
 
+    hits, min_toa, max_toa = marker_pixel(hits, {'x': 237, 'y': 176, 'chipId': 0})
+
     if settings.hits_remove_cross:
         hits = remove_cross_hits(hits)
 
@@ -310,7 +330,7 @@ def parse_data_packages(positions, f, tot_correction, settings):
 
     hits = np.sort(hits, 0, 'stable', 'ToA')
 
-    return hits
+    return hits, min_toa, max_toa
 
 
 def parse_data_package(f, pos, tot_correction, tot_threshold, toa_phase_correction):

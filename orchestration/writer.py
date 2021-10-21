@@ -6,6 +6,8 @@ import lib
 
 
 class Writer(Process):
+    min_toa = -1
+    max_toa = -1
 
     def __init__(self, settings, keep_processing, finalise_writing, oq, fq):
         Process.__init__(self)
@@ -39,6 +41,8 @@ class Writer(Process):
                 else:
                     continue
 
+            self.min_max_toa(data['min_toa'], data['max_toa'])
+
             if self.settings.store_hits and 'hits' in data:
                 self.write_hits(data['hits'])
 
@@ -60,9 +64,23 @@ class Writer(Process):
         # Finish writing, and close file
         self.finalise()
 
+    def min_max_toa(self, min_toa, max_toa):
+        if min_toa > 0:
+            if self.min_toa == -1:
+                self.min_toa = min_toa
+            else:
+                self.min_toa = min(self.min_toa, min_toa)
+
+        if max_toa > 0:
+            if self.max_toa == -1:
+                self.max_toa = max_toa
+            else:
+                self.max_toa = max(self.max_toa, max_toa)
+
     def finalise(self):
         if self.settings.store_hits:
-            self.io.store_hits(self.settings.raw, self.settings.hits_tot_correct_file, self.settings.hits_cross_extra_offset)
+            self.io.store_hits(self.settings.raw, self.settings.hits_tot_correct_file,
+                               self.settings.hits_cross_extra_offset, self.min_toa, self.max_toa)
 
         if self.settings.store_clusters:
             self.io.store_clusters(self.settings.cluster_time_window, self.settings.cluster_max_sum_tot,
@@ -70,7 +88,8 @@ class Writer(Process):
                                    self.settings.cluster_max_size, self.settings.cluster_min_size)
 
         if self.settings.store_events:
-            self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model, self.settings.hits_cross_extra_offset)
+            self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model,
+                                 self.settings.hits_cross_extra_offset, self.min_toa, self.max_toa)
 
         self.io.close_write()
 

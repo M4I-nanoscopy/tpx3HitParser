@@ -72,13 +72,15 @@ class io:
             hits_f.resize(old + len(hits), 0)
             hits_f[old:] = hits
 
-    def store_hits(self, file_name, hits_tot_correct_file, hits_cross_extra_offset):
+    def store_hits(self, file_name, hits_tot_correct_file, hits_cross_extra_offset, min_toa, max_toa):
         if 'hits' not in self.write:
             logger.warning("There was no dataset /hits written to the output file. Was nothing processed?")
             return
 
         self.write_base_attributes('hits')
         self.write['hits'].attrs['input_file_name'] = file_name
+        self.write['hits'].attrs['min_toa'] = min_toa
+        self.write['hits'].attrs['max_toa'] = max_toa
         self.write['hits'].attrs['shape'] = tpx3format.calculate_image_shape(hits_cross_extra_offset)
 
         if hits_tot_correct_file != "0":
@@ -146,7 +148,7 @@ class io:
             events_f.resize(old + len(events), 0)
             events_f[old:] = events
 
-    def store_events(self, algorithm, cnn_model, hits_cross_extra_offset):
+    def store_events(self, algorithm, cnn_model, hits_cross_extra_offset, min_toa, max_toa):
         if 'events' not in self.write:
             logger.warning("There was no dataset /events written to the output file. Was nothing processed?")
             return
