@@ -88,6 +88,10 @@ class Gpu(Process):
 
     # Parse and sent to GPU
     def parse_clusters_gpu(self):
+        if self.offset == 0:
+            self.logger.debug("No clusters for GPU parsing")
+            return
+
         e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model,
                        self.settings.event_cnn_tot_only, self.settings.hits_cross_extra_offset,
                        self.settings.cluster_stats
