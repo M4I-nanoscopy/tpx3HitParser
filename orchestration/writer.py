@@ -41,7 +41,8 @@ class Writer(Process):
                 else:
                     continue
 
-            self.min_max_toa(data['min_toa'], data['max_toa'])
+            if 'min_toa' in data and 'max_toa' in data:
+                self.min_max_toa(data['min_toa'], data['max_toa'])
 
             if self.settings.store_hits and 'hits' in data:
                 self.write_hits(data['hits'])
