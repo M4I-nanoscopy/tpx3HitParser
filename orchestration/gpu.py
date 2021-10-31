@@ -88,15 +88,17 @@ class Gpu(Process):
 
     # Parse and sent to GPU
     def parse_clusters_gpu(self):
-        if self.offset == 0:
-            self.logger.debug("No clusters for GPU parsing")
-            return
+        e = np.empty(0, events.event_info_datatype(self.settings.cluster_stats))
 
-        e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model,
-                       self.settings.event_cnn_tot_only, self.settings.hits_cross_extra_offset,
-                       self.settings.cluster_stats
-                       )
-        # e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid', self.settings.cluster_stats)
+        # Only parse if there are any events to parse
+        if self.offset > 0:
+            e = events.cnn(self.clusters[:self.offset], self.cluster_info[:self.offset], self.model,
+                           self.settings.event_cnn_tot_only, self.settings.hits_cross_extra_offset,
+                           self.settings.cluster_stats
+                           )
+            # e = events.localise_events(self.clusters[:self.offset], self.cluster_info[:self.offset], 'centroid', self.settings.cluster_stats)
+        else:
+            self.logger.debug("No clusters for GPU parsing. Passing empty event datalist")
 
         if self.settings.store_events:
             self.output_queue.put({
