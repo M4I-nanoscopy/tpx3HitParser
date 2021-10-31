@@ -25,7 +25,7 @@ def read_positions(f):
             # Reached EOF
             break
         if len(b) < 8:
-            logger.error("Truncated file, no full header at file position %d" % f.tell())
+            logger.error("Truncated file, no full header at file position %d. Continuing with what we have." % f.tell())
             break
 
         header = struct.unpack('<bbbbbbbb', b)
@@ -40,7 +40,12 @@ def read_positions(f):
         size = ((0xff & header[7]) << 8) | (0xff & header[6])
 
         # Read the first package of the data package to figure out its type
-        pkg = struct.unpack("<Q", f.read(8))[0]
+        pkg_data = f.read(8)
+        if len(pkg_data) < 8:
+            logger.error("Truncated file, no first data packet found at file position %d. Continuing with what we have." % f.tell())
+            break
+
+        pkg = struct.unpack("<Q", pkg_data)[0]
         pkg_type = pkg >> 60
 
         # The SPIDR time is 16 bit (65536). It has a rollover time of 26.843 seconds
