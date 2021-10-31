@@ -155,6 +155,8 @@ class io:
 
         self.write_base_attributes('events')
         self.write['events'].attrs['algorithm'] = algorithm
+        self.write['events'].attrs['min_toa'] = min_toa
+        self.write['events'].attrs['max_toa'] = max_toa
         self.write['events'].attrs['shape'] = tpx3format.calculate_image_shape(hits_cross_extra_offset)
 
         if algorithm == 'cnn':
