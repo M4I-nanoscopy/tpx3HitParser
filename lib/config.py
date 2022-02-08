@@ -89,7 +89,7 @@ def parse_config(argv=None):
     post_process_group.add_argument("--hits_sort_toa", type=str2bool, metavar='0/1', help='Sort hit data on ToA')
     post_process_group.add_argument("--event_sort_toa", type=str2bool, metavar='0/1', help='Sort event data on ToA')
     # post_process_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
-    # post_process_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
+    post_process_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
     post_process_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
 
     # Constants
