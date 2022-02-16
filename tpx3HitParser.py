@@ -6,7 +6,6 @@ import logging
 import orchestration
 import tpx3format
 import numpy
-from events import chip_edge_correct
 
 MIN_PYTHON = (3, 8)
 if sys.version_info < MIN_PYTHON:
@@ -91,15 +90,6 @@ def main():
         io.replace_events(events)
         io.close_write()
         logger.info('Finished sorting event data on ToA.')
-
-    # Redistribute chip edges over multiple pixels
-    if settings.correct_chip_edge:
-        events = io.read_events(settings.output)
-        events = chip_edge_correct(events)
-        io.open_write(settings.output, overwrite=False, append=True)
-        io.replace_events(events)
-        io.write['events'].attrs['shape'] = 516
-        io.close_write()
 
     if settings.freq_tot:
         logger.info('Start building ToT frequency matrix...')

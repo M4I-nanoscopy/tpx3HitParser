@@ -89,7 +89,6 @@ def parse_config(argv=None):
     post_process_group.add_argument("--hits_sort_toa", type=str2bool, metavar='0/1', help='Sort hit data on ToA')
     post_process_group.add_argument("--event_sort_toa", type=str2bool, metavar='0/1', help='Sort event data on ToA')
     # post_process_group.add_argument("--correct_super_res", action='store_true', help="Correct and redistribute super resolution events")
-    post_process_group.add_argument("--correct_chip_edge", action='store_true', help="Correct chip edge events")
     post_process_group.add_argument("--freq_tot", action='store_true', help="Parse and store ToT frequency matrix")
 
     # Constants
@@ -102,6 +101,7 @@ def parse_config(argv=None):
     c_group.add_argument("--hits_tot_correct_file", metavar='FILE', help='ToT correction file, or 0 for no correction')
     c_group.add_argument("--hits_toa_phase_correction", type=int, metavar='N', help='Apply ToA correction. 0=None, 1=Maastricht-Pll30, 2=Basel-Pll30, 3=Pll94')
     c_group.add_argument("--hits_tot_threshold", type=int, metavar='N', help='Below this ToT threshold hits are not stored')
+    c_group.add_argument("--hits_correct_chip_edges", type=str2bool, metavar='0/1', help='Correct chip edges for hits (not applied on data used for clustering)')
     c_group.add_argument("--cluster_time_window", type=int, metavar='N', help='Maximum time interval between individual hits to cluster them (in fine ToA values=1.56ns)')
     c_group.add_argument("--cluster_min_size", type=int, metavar='N', help='Minimum cluster size')
     c_group.add_argument("--cluster_max_size", type=int, metavar='N', help='Maximum cluster size')
@@ -111,6 +111,7 @@ def parse_config(argv=None):
     c_group.add_argument("--cluster_matrix_size", type=int, metavar='N', help='Size of the resulting cluster matrix')
     c_group.add_argument("--event_cnn_model", metavar='FILE', help='CNN model to use for event localisation')
     c_group.add_argument("--event_cnn_tot_only", metavar='0/1', type=str2bool, help='The specified CNN model uses ToT only')
+    c_group.add_argument("--event_correct_chip_edges", metavar='0/1', type=str2bool, help="Correct chip edge for events")
     c_group.add_argument("-a", "--algorithm", metavar='A', help='Event localisation algorithm to use')
 
     # Misc

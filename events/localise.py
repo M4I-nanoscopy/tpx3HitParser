@@ -70,6 +70,7 @@ def calculate_random(cluster_matrix, cluster_info, events, cluster_stats):
         elif len(nzy) == 1:
             y, x = nzy[0], nzx[0]
         else:
+            # TODO: This is wrong! We should also select a random pixel in x direction
             i = np.random.randint(0, len(nzy) - 1)
             y, x = nzy[i], nzx[i]
 

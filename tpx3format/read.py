@@ -207,6 +207,30 @@ def remove_cross_hits(hits):
     return hits
 
 
+# Correct the chip edge (cross) hits, by smearing them out. Can only be run when combining chips with an offset of 2
+def correct_chip_edge_hits(hits):
+    hx = hits['x']
+    hy = hits['y']
+
+    # Take second horizontal row and redivide over itself and two lower pixels
+    x_edge1 = (hx == 260)
+    hx[x_edge1] = hx[x_edge1] - np.random.random_integers(0, 2, len(hx[x_edge1]))
+
+    # Take first horizontal row and redivide over three pixels
+    x_edge2 = (hx == 255)
+    hx[x_edge2] = hx[x_edge2] + np.random.random_integers(0, 2, len(hx[x_edge2]))
+
+    # Take second vertical column and redivide over three pixels
+    y_edge1 = (hy == 260)
+    hy[y_edge1] = hy[y_edge1] - np.random.random_integers(0, 2, len(hy[y_edge1]))
+
+    # Take second vertical column and redivide over three pixels
+    y_edge2 = (hy == 255)
+    hy[y_edge2] = hy[y_edge2] + np.random.random_integers(0, 2, len(hy[y_edge2]))
+
+    return hits
+
+
 def apply_tot_correction(tot_correction, ToT, y, x, chip_id):
     return tot_correction.item((ToT, y, x, chip_id))
 

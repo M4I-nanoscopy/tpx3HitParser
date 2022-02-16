@@ -101,6 +101,10 @@ class Gpu(Process):
             self.logger.debug("No clusters for GPU parsing. Passing empty event datalist")
 
         if self.settings.store_events:
+
+            if self.settings.event_correct_chip_edges:
+                e = events.chip_edge_correct(e)
+
             self.output_queue.put({
                 'events': e,
                 'chunks': len(self.chunks),
