@@ -74,6 +74,7 @@ def main():
 
     # ToA sorting for hits and events
     if settings.hits_sort_toa:
+        # TODO: Handle hits data not being present
         logger.info('Start sorting hits data on ToA...')
         hits = io.read_hits(settings.output)
         hits = numpy.sort(hits, 0, 'stable', 'ToA')
@@ -83,6 +84,7 @@ def main():
         logger.info('Finished sorting hits data on ToA.')
 
     if settings.event_sort_toa:
+        # TODO: Handle events data not being present
         logger.info('Start sorting event data on ToA...')
         events = io.read_events(settings.output)
         events = numpy.sort(events, 0, 'stable', 'ToA')

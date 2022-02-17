@@ -357,6 +357,9 @@ def parse_data_packages(positions, f, tot_correction, settings):
     if settings.hits_combine_chips:
         combine_chips(hits, settings.hits_cross_extra_offset)
 
+    if settings.hits_correct_chip_edges:
+        correct_chip_edge_hits(hits)
+
     hits = np.sort(hits, 0, 'stable', 'ToA')
 
     return hits, min_toa, max_toa

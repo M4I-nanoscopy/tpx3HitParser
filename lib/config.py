@@ -129,7 +129,10 @@ def parse_config(argv=None):
         parser.error('Parsing clusters (-C) is required when parsing events (-E)')
 
     if settings.freq_tot and settings.hits_combine_chips:
-         parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+        parser.error('When building --freq_tot you cannot combine chips to one matrix first. Set --hits_combine_chips to 0.')
+
+    if settings.hits_correct_chip_edges and settings.C:
+        parser.error("Cannot combine correcting for hit chip edges and parsing clusters at the same time.")
 
     return settings
 

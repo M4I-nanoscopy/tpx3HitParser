@@ -48,13 +48,7 @@ class Worker(Process):
             }
 
             if self.settings.store_hits:
-                # We need to pass the uncorrected hits to cluster finding. So create copy of hits
-                if self.settings.hits_correct_chip_edges:
-                    hits_corrected = hits.copy()
-                    hits_corrected = tpx3format.correct_chip_edge_hits(hits_corrected)
-                    output['hits'] = hits_corrected
-                else:
-                    output['hits'] = hits
+                output['hits'] = hits
 
             if self.settings.C:
                 cl, cl_info = self.parse_hits(hits)
