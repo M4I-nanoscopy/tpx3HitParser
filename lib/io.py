@@ -148,7 +148,7 @@ class io:
             events_f.resize(old + len(events), 0)
             events_f[old:] = events
 
-    def store_events(self, algorithm, cnn_model, hits_cross_extra_offset, min_toa, max_toa):
+    def store_events(self, algorithm, cnn_model, hits_cross_extra_offset, min_toa, max_toa, event_correct_chip_edges):
         if 'events' not in self.write:
             logger.warning("There was no dataset /events written to the output file. Was nothing processed?")
             return
@@ -157,7 +157,7 @@ class io:
         self.write['events'].attrs['algorithm'] = algorithm
         self.write['events'].attrs['min_toa'] = min_toa
         self.write['events'].attrs['max_toa'] = max_toa
-        self.write['events'].attrs['shape'] = tpx3format.calculate_image_shape(hits_cross_extra_offset)
+        self.write['events'].attrs['shape'] = ev.calculate_image_shape(hits_cross_extra_offset, event_correct_chip_edges)
 
         if algorithm == 'cnn':
             self.write['events'].attrs['cnn_model'] = cnn_model

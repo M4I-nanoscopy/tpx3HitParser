@@ -90,7 +90,7 @@ class Writer(Process):
 
         if self.settings.store_events:
             self.io.store_events(self.settings.algorithm, self.settings.event_cnn_model,
-                                 self.settings.hits_cross_extra_offset, self.min_toa, self.max_toa)
+                                 self.settings.hits_cross_extra_offset, self.min_toa, self.max_toa, self.settings.event_correct_chip_edges)
 
         self.io.close_write()
 

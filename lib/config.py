@@ -134,6 +134,9 @@ def parse_config(argv=None):
     if settings.hits_correct_chip_edges and settings.C:
         parser.error("Cannot combine correcting for hit chip edges and parsing clusters at the same time.")
 
+    if settings.hits_cross_extra_offset > 0 and settings.event_correct_chip_edges:
+        parser.error("Cannot give hits data an extra cross offset when correct events for chip edges")
+
     return settings
 
 

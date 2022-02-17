@@ -191,3 +191,10 @@ def event_info_datatype(cluster_stats):
         dt = dt + dt_event_extended
 
     return numpy.dtype(dt)
+
+
+def calculate_image_shape(hits_cross_extra_offset, events_correct_chip_edges):
+    if events_correct_chip_edges:
+        return 512 + 2 * 2
+    else:
+        return 512 + 2 * hits_cross_extra_offset
