@@ -4,10 +4,10 @@ from multiprocessing import Process
 import queue
 import numpy
 
-import clusters
-import events
-import tpx3format
-from lib.constants import TOT_CORRECTION_SHAPE
+import tp3hitparser.clusters as clusters
+import tp3hitparser.events as events
+import tp3hitparser.tpx3format as tp3hitparser
+from tp3hitparser.lib.constants import TOT_CORRECTION_SHAPE
 
 
 class Worker(Process):

@@ -4,11 +4,11 @@ import os
 import datetime
 import h5py
 import lib
-import tpx3format
-from lib import constants
+import tp3hitparser.tpx3format
+from tp3hitparser.lib import constants
 
-import clusters
-import events as ev
+import tp3hitparser.clusters as clusters
+import tp3hitparser.events as ev
 
 logger = logging.getLogger('root')
 

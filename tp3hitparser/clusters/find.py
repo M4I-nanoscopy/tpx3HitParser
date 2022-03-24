@@ -1,8 +1,8 @@
 import lib
 import logging
 
-from clusters.clfind import clfind
-from lib.constants import *
+from tp3hitparser.clusters.clfind import clfind
+from tp3hitparser.lib.constants import *
 import numpy as np
 import scipy.sparse
 

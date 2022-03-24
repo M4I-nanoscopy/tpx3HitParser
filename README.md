@@ -3,8 +3,8 @@
 ### Download
 
 ```
-git clone https://github.com/M4I-nanoscopy/tpx3HitParser.git
-cd tpx3HitParser
+git clone https://github.com/M4I-nanoscopy/tp3hitparser.git
+cd tp3hitparser
 ```
 
 Recommended way is to use a Python virtualenv, but this is optional.
@@ -40,8 +40,8 @@ See the code at `clusters/clfind`.
 ## Running
 
 ```
-$ ./tpx3HitParser --help
-usage: tpx3HitParser.py [-h] [-c FILE] --raw FILE [-C] [-E] -o FILE [--overwrite] [--store_hits]
+$ ./tp3hitparser --help
+usage: tp3hitparser.py [-h] [-c FILE] --raw FILE [-C] [-E] -o FILE [--overwrite] [--store_hits]
                         [--store_clusters] [--store_events] [--hits_sort_toa 0/1]
                         [--event_sort_toa 0/1] [--cores N] [--max_hits N] [--hits_remove_cross 0/1]
                         [--hits_combine_chips 0/1] [--hits_cross_extra_offset N]

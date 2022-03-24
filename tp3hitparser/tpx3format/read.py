@@ -4,7 +4,7 @@ import struct
 import h5py
 import numpy as np
 
-from lib.constants import *
+from tp3hitparser.lib.constants import *
 import os
 
 # TODO: Logging does not work for multiprocessing processes on Windows
