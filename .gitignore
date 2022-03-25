@@ -14,7 +14,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# lib/ # Commented out because the package contains a lib folder
 lib64/
 parts/
 sdist/
