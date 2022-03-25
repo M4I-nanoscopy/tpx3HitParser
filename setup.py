@@ -8,10 +8,9 @@ import tp3hitparser
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-# Get the long description from the README file
-# with open(os.path.join(here, 'README.rst'), encoding='utf-8') as f:
-#     long_description = f.read()
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 setup(
     name="tp3hitparser",
@@ -32,11 +31,14 @@ setup(
         '300.cfg']
         },
     author="Paul Van Schayck",
-    # description="Add entries to start Jupyter from context menu.",
-    # long_description=long_description,
-    # long_description_content_type="text/x-rst",
+    description="Convert TIMEPIX3 files to hdf5",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    url="https://github.com/M4I-nanoscopy/tpx3HitParser",
+    project_urls={
+        "Bug Tracker": "https://github.com/M4I-nanoscopy/tpx3HitParser/issues",
+    },
     license="BSDv3",
-    url="https://github.com/hyperspy/start_jupyter_cm",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
