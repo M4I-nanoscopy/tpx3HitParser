@@ -1,10 +1,11 @@
-import lib
 import logging
 
-from tp3hitparser.clusters.clfind import clfind
-from tp3hitparser.lib.constants import *
 import numpy as np
 import scipy.sparse
+
+from tp3hitparser import lib
+from tp3hitparser.clusters.clfind import clfind
+from tp3hitparser.lib.constants import *
 
 logger = logging.getLogger('root')
 
