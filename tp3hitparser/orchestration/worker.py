@@ -4,9 +4,9 @@ from multiprocessing import Process
 import queue
 import numpy
 
-import tp3hitparser.clusters as clusters
-import tp3hitparser.events as events
-import tp3hitparser.tpx3format as tp3hitparser
+from tp3hitparser import clusters
+from tp3hitparser import events
+from tp3hitparser import tpx3format
 from tp3hitparser.lib.constants import TOT_CORRECTION_SHAPE
 
 
