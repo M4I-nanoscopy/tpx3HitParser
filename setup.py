@@ -27,7 +27,10 @@ setup(
         "tqdm>=4.0.0,<5.0",
         "mrcfile>1.0.0,<2.0.0",
     ],
-    package_data={'tp3hitparser': ['*.cfg',]},
+    package_data={'tp3hitparser': [
+        'default.cfg',
+        '300.cfg']
+        },
     author="Paul Van Schayck",
     # description="Add entries to start Jupyter from context menu.",
     # long_description=long_description,
