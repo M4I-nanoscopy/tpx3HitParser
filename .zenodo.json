@@ -9,7 +9,7 @@
       "orcid": "https://orcid.org/0000-0001-6591-4637"
     },
     {
-      "name": "Ravelli, Raimond B.G.",
+      "name": "Ravelli, Raimond B. G.",
       "affiliation": "Maastricht MultiModal Molecular Imaging Institute (M4I), FHML, Maastricht University, Maastricht, The Netherlands",
       "orcid": "https://orcid.org/0000-0001-6056-5888"
     }
@@ -24,6 +24,12 @@
     {
       "scheme": "doi",
       "identifier": "10.1016/j.ultramic.2020.113091",
+      "relation": "isDescribedBy",
+      "resource_type": "publication-article"
+    },
+    {
+      "scheme": "doi",
+      "identifier": "10.1093/micmic/ozac009",
       "relation": "isDescribedBy",
       "resource_type": "publication-article"
     }

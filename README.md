@@ -136,6 +136,7 @@ Please consider citing either or both the Zenodo deposit of this code and our pa
 
 * van Schayck, J. Paul. (2020). M4I-nanoscopy/tpx3EventViewer. _Zenodo_. https://doi.org/10.5281/zenodo.3693990
 * Schayck, J. P. van, Genderen, E. van, Maddox, E., Roussel, L., Boulanger, H., Fröjdh, E., Abrahams, J.-P., Peters, P. J. & Ravelli, R. B. G. (2020). Sub-pixel electron detection using a convolutional neural network. _Ultramicroscopy_, 218, 113091. https://doi.org/10.1016/j.ultramic.2020.113091
+* J Paul van Schayck, Yue Zhang, Kèvin Knoops, Peter J Peters, Raimond B G Ravelli, Integration of an Event-driven Timepix3 Hybrid Pixel Detector into a Cryo-EM Workflow, Microscopy and Microanalysis, Volume 29, Issue 1, February 2023, Pages 352–363, https://doi.org/10.1093/micmic/ozac009
 
 
 ## Copyright
