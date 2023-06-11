@@ -17,18 +17,19 @@ setup(
     version=tp3hitparser.__version__,
     packages=find_packages(),
     install_requires=[
-        "h5py>=2.8.0,<3.2.0",
+        "h5py>=3.0.0,<4.0.0",
         "matplotlib>=3.0.0,<4.0.0",
         "Pillow>9.0.0,<10.0.0",
-        "tensorflow<2.7.0",
+        "tensorflow<2.9.0",
         "scipy>1.4.0,<2.0.0",
-        "numpy>=1.16.0,<1.20.0",
+        "numpy>=1.20.0,<1.25.0",
         "tqdm>=4.0.0,<5.0",
         "mrcfile>1.0.0,<2.0.0",
     ],
     package_data={'tp3hitparser': [
         'default.cfg',
-        '300.cfg']
+        '300.cfg',
+        '200kv-events-chip_edge.cfg']
         },
     author="Paul Van Schayck",
     description="Convert TIMEPIX3 files to hdf5",
