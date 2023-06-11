@@ -4,11 +4,11 @@ import signal
 from multiprocessing import Process
 import queue
 
-import tp3hitparser.events as events
-import tp3hitparser.clusters as clusters
+import tpx3hitparser.events as events
+import tpx3hitparser.clusters as clusters
 import numpy as np
 
-from tp3hitparser.lib.constants import EVENTS_CHUNK_SIZE, dt_clusters
+from tpx3hitparser.lib.constants import EVENTS_CHUNK_SIZE, dt_clusters
 
 
 class Gpu(Process):

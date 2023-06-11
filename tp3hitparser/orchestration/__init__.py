@@ -1,1 +1,1 @@
-from tp3hitparser.orchestration.orchestrator import Orchestrator
+from tpx3hitparser.orchestration.orchestrator import Orchestrator

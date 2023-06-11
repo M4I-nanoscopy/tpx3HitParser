@@ -2,7 +2,7 @@ import logging
 import queue
 import signal
 from multiprocessing import Process
-import tp3hitparser.lib as lib
+import tpx3hitparser.lib as lib
 
 
 class Writer(Process):

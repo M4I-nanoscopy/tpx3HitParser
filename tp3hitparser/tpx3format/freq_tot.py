@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-from tp3hitparser import lib
+from tpx3hitparser import lib
 
 logger = logging.getLogger('root')
 

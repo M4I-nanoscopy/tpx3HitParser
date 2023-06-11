@@ -5,9 +5,9 @@ import logging
 import numpy
 
 
-import tp3hitparser.orchestration as orchestration
-import tp3hitparser.tpx3format as tpx3format
-from tp3hitparser import lib
+import tpx3hitparser.orchestration as orchestration
+import tpx3hitparser.tpx3format as tpx3format
+from tpx3hitparser import lib
 
 
 MIN_PYTHON = (3, 8)
@@ -56,14 +56,14 @@ def main():
     # This is a copy of the code in clusters/clfind/__init__.py
     try:
         try:
-            from tp3hitparser.clusters.clfind.target.release.libclfind import clfind
+            from tpx3hitparser.clusters.clfind.target.release.libclfind import clfind
         except ModuleNotFoundError:
-            from tp3hitparser.clusters.clfind.target.debug.libclfind import clfind
+            from tpx3hitparser.clusters.clfind.target.debug.libclfind import clfind
             logger.warning("Loaded debug version of Rust compiled clfind (this is slower).")
     except ImportError:
         logger.warning(
             "Could not find or load the compiled Rust version of clfind. Loading slower numpy implementation")
-        from tp3hitparser.clusters.clfind.clfind_np import clfind
+        from tpx3hitparser.clusters.clfind.clfind_np import clfind
 
     # Start main processing
     orchestrator = orchestration.Orchestrator(settings)

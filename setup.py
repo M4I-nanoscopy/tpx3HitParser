@@ -4,7 +4,7 @@ import os
 # To use a consistent encoding
 from codecs import open
 
-import tp3hitparser
+import tpx3hitparser
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -13,8 +13,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="tp3hitparser",
-    version=tp3hitparser.__version__,
+    name="tpx3hitparser",
+    version=tpx3hitparser.__version__,
     packages=find_packages(),
     install_requires=[
         "h5py>=3.0.0,<4.0.0",
@@ -26,7 +26,7 @@ setup(
         "tqdm>=4.0.0,<5.0",
         "mrcfile>1.0.0,<2.0.0",
     ],
-    package_data={'tp3hitparser': [
+    package_data={'tpx3hitparser': [
         'default.cfg',
         '300.cfg',
         '200kv-events-chip_edge.cfg']
@@ -59,6 +59,6 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'tp3hitparser = tp3hitparser.tpx3HitParser:main',
+            'tpx3hitparser = tpx3hitparser.tpx3HitParser:main',
         ], }
 )
