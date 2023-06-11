@@ -7,6 +7,11 @@
       "name": "van Schayck, J. Paul",
       "affiliation": "Maastricht MultiModal Molecular Imaging Institute (M4I), FHML, Maastricht University, Maastricht, The Netherlands",
       "orcid": "https://orcid.org/0000-0001-6591-4637"
+    },
+    {
+      "name": "Ravelli, Raimond B. G.",
+      "affiliation": "Maastricht MultiModal Molecular Imaging Institute (M4I), FHML, Maastricht University, Maastricht, The Netherlands",
+      "orcid": "https://orcid.org/0000-0001-6056-5888"
     }
   ],
   "related_identifiers": [
@@ -15,6 +20,18 @@
       "identifier": "10.5281/zenodo.3635923",
       "relation": "isReferencedBy",
       "resource_type": "dataset"
+    },
+    {
+      "scheme": "doi",
+      "identifier": "10.1016/j.ultramic.2020.113091",
+      "relation": "isDescribedBy",
+      "resource_type": "publication-article"
+    },
+    {
+      "scheme": "doi",
+      "identifier": "10.1093/micmic/ozac009",
+      "relation": "isDescribedBy",
+      "resource_type": "publication-article"
     }
   ]
 }

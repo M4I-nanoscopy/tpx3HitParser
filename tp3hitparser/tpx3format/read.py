@@ -349,6 +349,7 @@ def parse_data_packages(positions, f, tot_correction, settings):
     # There may have been hits that were not parsed (failed package), resize those empty rows away.
     hits.resize((i,), refcheck=False)
 
+    # TODO: Make this marker pixel configureable.
     hits, min_toa, max_toa = marker_pixel(hits, {'x': 237, 'y': 176, 'chipId': 0})
 
     if settings.hits_remove_cross:
