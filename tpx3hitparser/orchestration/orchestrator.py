@@ -9,11 +9,11 @@ import logging
 
 from tqdm import tqdm
 
-import tpx3format
-from lib.constants import TOT_CORRECTION_SHAPE
-from orchestration.gpu import Gpu
-from orchestration.worker import Worker
-from orchestration.writer import Writer
+import tpx3hitparser.tpx3format as tpx3format
+from tpx3hitparser.lib.constants import TOT_CORRECTION_SHAPE
+from tpx3hitparser.orchestration.gpu import Gpu
+from tpx3hitparser.orchestration.worker import Worker
+from tpx3hitparser.orchestration.writer import Writer
 
 
 class Orchestrator:

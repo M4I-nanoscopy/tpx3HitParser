@@ -27,7 +27,8 @@ def parse_config(argv=None):
                              metavar="FILE")
     args, remaining_argv = conf_parser.parse_known_args()
 
-    default_conf_file = os.path.join(os.path.dirname(argv[0]), 'default.cfg')
+    default_conf_file = os.path.join(os.path.split(os.path.abspath(os.path.dirname(__file__)))[0], "default.cfg")
+
 
     conf_file = None
     if not args.config and os.path.exists(default_conf_file):

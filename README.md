@@ -31,11 +31,7 @@ A minimal version of Python 3.8 is needed (due to use of multiprocessing.shared_
 python3 -m venv tpx3-py3
 source tpx3-py3/bin/activate
 pip install pip --upgrade
-pip install wheel
-```
-Install Python dependencies
-```
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### Tensorflow
@@ -55,7 +51,7 @@ See the code at `clusters/clfind`.
 ## Running
 
 ```
-$ ./tpx3HitParser --help
+$ tpx3HitParser --help
 usage: tpx3HitParser.py [-h] [-c FILE] --raw FILE [-C] [-E] -o FILE [--overwrite] [--store_hits]
                         [--store_clusters] [--store_events] [--cluster_stats] [--hits_sort_toa 0/1]
                         [--event_sort_toa 0/1] [--freq_tot] [--cores N] [--max_hits N]
@@ -149,5 +145,4 @@ MIT License
 
 ## Authors
 
-* Paul van Schayck (p.vanschayck@maastrichtuniversity.nl)
-* Raimond Ravelli (rbg.ravelli@maastrichtuniversity.nl) (corresponding)
+Paul van Schayck (p.vanschayck@maastrichtuniversity.nl)

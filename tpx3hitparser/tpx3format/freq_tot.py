@@ -2,7 +2,9 @@ import logging
 import multiprocessing
 import numpy as np
 from tqdm import tqdm
-import lib
+
+
+from tpx3hitparser import lib
 
 logger = logging.getLogger('root')
 

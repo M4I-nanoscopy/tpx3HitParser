@@ -2,9 +2,9 @@ import logging
 import random
 from scipy import ndimage
 
-import tpx3format
-from lib.exceptions import UserConfigException
-from lib.constants import *
+import tpx3hitparser.tpx3format
+from tpx3hitparser.lib.exceptions import UserConfigException
+from tpx3hitparser.lib.constants import *
 import numpy as np
 
 logger = logging.getLogger('root')
